@@ -10,7 +10,11 @@ const fieldAliases = {
   description: ['问题描述', '描述', '问题', '工单描述'],
   status: ['状态', '状态（选择）', '状态(选择)'],
   reporter: ['上报人', '提交人'],
-  updatedAt: ['最后更新时间', '更新时间', '更新日期'],
+  updatedAt: ['最后更新时间', '更新时间', '最近更新时间', '更新日期'],
+  submittedAt: ['工单提出时间', '提出时间', '创建时间', '提交时间', '上报时间', '创建日期'],
+  resolvedAt: ['工单解决时间', '解决时间', '处理完成时间', '完成时间', '解决日期'],
+  acceptedAt: ['工单验收时间', '验收时间', '教研验收时间', '验收完成时间'],
+  archivedAt: ['工单归档时间', '归档时间', '完成归档时间', '关闭时间', '归档日期'],
   owner: ['工单默认负责人', '默认负责人', '负责人'],
   researcher: ['教研负责人']
 };
@@ -46,6 +50,11 @@ function stringifyCell(value) {
   return String(value).trim();
 }
 
+function nullableCell(value) {
+  const text = stringifyCell(value);
+  return text || null;
+}
+
 export function parseWorkorderExcel(buffer) {
   const workbook = xlsx.read(buffer, {
     type: 'buffer',
@@ -78,7 +87,11 @@ export function parseWorkorderExcel(buffer) {
     description: stringifyCell(row[headerMap.description]),
     status: stringifyCell(row[headerMap.status]),
     reporter: stringifyCell(row[headerMap.reporter]),
-    updatedAt: stringifyCell(row[headerMap.updatedAt]),
+    updatedAt: nullableCell(row[headerMap.updatedAt]),
+    submittedAt: nullableCell(row[headerMap.submittedAt]),
+    resolvedAt: nullableCell(row[headerMap.resolvedAt]),
+    acceptedAt: nullableCell(row[headerMap.acceptedAt]),
+    archivedAt: nullableCell(row[headerMap.archivedAt]),
     owner: stringifyCell(row[headerMap.owner]),
     researcher: stringifyCell(row[headerMap.researcher])
   }));

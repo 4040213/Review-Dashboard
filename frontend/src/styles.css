@@ -119,6 +119,48 @@ button:disabled {
   padding: 24px;
 }
 
+.data-source-bar,
+.upload-panel {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 24px;
+}
+
+.data-source-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.data-source-select {
+  min-width: 260px;
+}
+
+.auto-sync-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  color: #475467;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.sync-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 210px;
+  color: #667085;
+  font-size: 12px;
+}
+
+.sync-meta strong {
+  color: #101828;
+  font-size: 13px;
+}
+
 .upload-panel {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -180,7 +222,7 @@ button:disabled {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 16px;
   margin-top: 20px;
 }
@@ -238,6 +280,281 @@ button:disabled {
 
 .warning-card strong {
   color: #b54708;
+}
+
+.status-overview-panel,
+.time-analysis-panel {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.status-overview-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 18px;
+  align-items: stretch;
+}
+
+.status-stack-card {
+  border: 1px solid #edf0f5;
+  border-radius: 16px;
+  padding: 16px;
+  background: #fff;
+}
+
+.status-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.status-summary-card {
+  border: 1px solid #edf0f5;
+  border-top: 4px solid var(--status-color);
+  border-radius: 14px;
+  padding: 12px;
+  background: #fff;
+}
+
+.status-summary-card span,
+.status-summary-card em {
+  display: block;
+  color: #667085;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.status-summary-card strong {
+  display: block;
+  margin: 8px 0 4px;
+  color: #101828;
+  font-size: 20px;
+}
+
+.time-empty-state {
+  border: 1px dashed #cbd5e1;
+  border-radius: 16px;
+  padding: 28px;
+  color: #64748b;
+  background: #f8fafc;
+  text-align: center;
+  line-height: 1.7;
+}
+
+.time-analysis-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.time-trend-card,
+.time-duration-card,
+.time-pending-card {
+  border: 1px solid #edf0f5;
+  border-radius: 16px;
+  padding: 18px;
+  background: #fff;
+}
+
+.time-card-title {
+  margin-bottom: 14px;
+}
+
+.time-card-title h3 {
+  margin: 0;
+  color: #101828;
+  font-size: 16px;
+}
+
+.time-card-title p {
+  margin: 6px 0 0;
+  color: #667085;
+  font-size: 13px;
+}
+
+.duration-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.duration-stat-item {
+  border: 1px solid #edf0f5;
+  border-radius: 14px;
+  padding: 14px 12px;
+  background: #fbfcff;
+}
+
+.duration-stat-item span {
+  display: block;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.duration-stat-item strong {
+  display: block;
+  margin-top: 8px;
+  color: #101828;
+  font-size: 22px;
+  letter-spacing: -0.03em;
+}
+
+.stage-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stage-card {
+  border: 1px solid #edf0f5;
+  border-radius: 14px;
+  padding: 14px;
+  background: #fbfcff;
+}
+
+.stage-label {
+  display: block;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.stage-card strong {
+  display: block;
+  margin-top: 8px;
+  color: #101828;
+  font-size: 18px;
+}
+
+.stage-details {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  color: #667085;
+  font-size: 12px;
+}
+
+.stage-card em {
+  display: block;
+  margin-top: 6px;
+  color: #98a2b3;
+  font-size: 11px;
+  font-style: normal;
+}
+
+.pending-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pending-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid #edf0f5;
+  border-radius: 14px;
+  padding: 12px;
+  background: #fff;
+}
+
+.pending-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  color: #194185;
+  background: #d1e9ff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.pending-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.pending-desc {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: #344054;
+  font-size: 13px;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.pending-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 6px;
+  color: #667085;
+  font-size: 12px;
+}
+
+.pending-hours {
+  flex-shrink: 0;
+  align-self: center;
+  color: #d92d20;
+  font-size: 18px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.feishu-status-tag {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.feishu-ok {
+  color: #027a48;
+  background: #dcfae6;
+}
+
+.feishu-warn {
+  color: #b54708;
+  background: #fef0c7;
+}
+
+.sync-message-banner {
+  grid-column: 1 / -1;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sync-success {
+  color: #027a48;
+  background: #dcfae6;
+}
+
+.sync-error {
+  color: #b42318;
+  background: #fee4e2;
+}
+
+@media (max-width: 1280px) {
+  .duration-stats-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .stage-stats-row {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
 }
 
 .conclusion-grid {
@@ -637,7 +954,7 @@ button:disabled {
 
 table {
   width: 100%;
-  min-width: 1680px;
+  min-width: 2400px;
   border-collapse: separate;
   border-spacing: 0;
   background: #fff;
@@ -677,6 +994,11 @@ tbody tr:hover td {
 
 .unclear-row td {
   background: #fffaf0;
+}
+
+.invalid-row td {
+  color: #64748b;
+  background: #f8fafc;
 }
 
 .description-cell {
@@ -722,6 +1044,11 @@ tbody tr:hover td {
 .muted-tag {
   color: #475467;
   background: #f2f4f7;
+}
+
+.ok-tag {
+  color: #027a48;
+  background: #dcfae6;
 }
 
 .empty-state,

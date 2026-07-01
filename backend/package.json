@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "cors": "latest",
+    "dotenv": "^17.4.2",
     "express": "latest",
     "multer": "latest",
     "sql.js": "latest",

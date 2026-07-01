@@ -5,7 +5,7 @@ import { analyzeWorkorders, buildStats } from './analyzer.js';
 function createWorkorder(overrides = {}) {
   return {
     id: overrides.id || '1',
-    coursePosition: '',
+    coursePosition: overrides.coursePosition || '系统课',
     grade: overrides.grade || '三年级',
     week: overrides.week || '第1周',
     type: overrides.type || '内容问题',
@@ -37,11 +37,12 @@ test('analyzeWorkorders detects unclear requirement reasons', () => {
   assert.deepEqual(result.unclearReasons, ['范围过大', '参考旧版', '单条多需求']);
 });
 
-test('analyzeWorkorders marks high risk when description is empty without over-marking repeated adjustment', () => {
+test('analyzeWorkorders excludes empty description from core analysis', () => {
   const [result] = analyzeWorkorders([createWorkorder({ description: '', status: '处理中' })]);
 
-  assert.equal(result.riskLevel, '高');
-  assert.equal(result.riskReasons.includes('问题描述为空'), true);
+  assert.equal(result.isValidForAnalysis, false);
+  assert.equal(result.invalidReasons.includes('核心字段缺失'), true);
+  assert.equal(result.riskLevel, '低');
   assert.equal(result.isRepeatedAdjustmentCandidate, false);
 });
 
@@ -73,12 +74,13 @@ test('buildStats returns dashboard ranking data', () => {
 
   const stats = buildStats(analyzed);
 
-  assert.equal(stats.totalCount, 3);
+  assert.equal(stats.totalRawCount, 3);
+  assert.equal(stats.validAnalysisCount, 3);
   assert.equal(stats.unfinishedCount, 2);
-  assert.equal(stats.completionRate, 33.3);
+  assert.equal(stats.archiveRate, 33.3);
   assert.equal(stats.unclearCount, 2);
   assert.equal(stats.typeRanking[0].name, '内容问题');
-  assert.equal(stats.typeRanking[0].value, 2);
+  assert.equal(stats.typeRanking[0].count, 2);
   assert.equal(stats.gradeRanking[0].name, '三年级');
   assert.equal(stats.weekRanking[0].name, '第1周');
 });

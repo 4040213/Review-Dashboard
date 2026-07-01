@@ -33,6 +33,16 @@ function formatFocusWorkorders(items = []) {
     .join('\n');
 }
 
+function formatTypicalCases(items = [], label = '案例') {
+  if (!items || !items.length) return `- 暂无${label}案例`;
+  return items
+    .slice(0, 5)
+    .map((item, index) => {
+      return `${index + 1}. 【${item.riskLevel || '-'}风险】${item.description || '未填写问题描述'}\n   - 状态：${item.status || '未填写'}；负责人：${item.owner || '未填写'}；所属类型：${item.type || '未填写'}\n   - 年级/周次：${[item.grade, item.week].filter(Boolean).join(' / ') || '-'}\n   - 问题分类：${item.issueCategory || '未分类'}；关键词：${formatArray(item.issueKeywords)}\n   - 不明确原因：${formatArray(item.unclearReasons)}`;
+    })
+    .join('\n');
+}
+
 function buildSuggestions(stats) {
   const suggestions = [];
   const topError = stats.errorContentRanking?.[0];
@@ -111,11 +121,25 @@ ${formatRanking(stats.gradeRanking)}
 
 ${formatRanking(stats.weekRanking)}
 
-## 五、重点工单
+## 五、典型案例
+
+### 5.1 高风险典型案例
+
+${formatTypicalCases(stats.typicalCases?.highRiskCases, '高风险')}
+
+### 5.2 需求不明确典型案例
+
+${formatTypicalCases(stats.typicalCases?.unclearCases, '需求不明确')}
+
+### 5.3 疑似反复调整案例
+
+${formatTypicalCases(stats.typicalCases?.repeatedAdjustmentCases, '反复调整')}
+
+## 六、重点工单
 
 ${formatFocusWorkorders(stats.focusWorkorders)}
 
-## 六、复盘建议
+## 七、复盘建议
 
 ${buildSuggestions(stats)}
 `;

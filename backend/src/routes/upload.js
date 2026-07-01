@@ -1,5 +1,6 @@
 import express from 'express';
 import multer from 'multer';
+import { defaultSourceId, getDataSource } from '../config/dataSources.js';
 import { parseWorkorderExcel } from '../services/excelParser.js';
 import { analyzeWorkorders, buildStats } from '../services/analyzer.js';
 import { replaceWorkorders } from '../db/database.js';
@@ -18,12 +19,20 @@ router.post('/', upload.single('file'), async (req, res) => {
       return res.status(400).json({ message: '请上传 Excel 文件' });
     }
 
-    const parsedWorkorders = parseWorkorderExcel(req.file.buffer);
+    const source = getDataSource(req.body?.sourceId || req.query.sourceId || defaultSourceId);
+    const parsedWorkorders = parseWorkorderExcel(req.file.buffer).map((item) => ({
+      ...item,
+      id: `${source.id}:excel:${item.id}`,
+      sourceId: source.id,
+      sourceName: source.name,
+      sourceRecordId: `excel:${item.id}`
+    }));
     const workorders = analyzeWorkorders(parsedWorkorders);
-    await replaceWorkorders(workorders);
+    await replaceWorkorders(workorders, source);
 
     return res.json({
       message: '上传、解析并分析成功',
+      source: { id: source.id, name: source.name, provider: source.provider },
       count: workorders.length,
       workorders,
       stats: buildStats(workorders)
