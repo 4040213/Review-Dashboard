@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 export default function CarouselSection({
   title,
   subtitle,
+  titleClass = '',
   items = [],
   renderItem,
   autoPlay = true,
@@ -102,7 +103,7 @@ export default function CarouselSection({
     >
       <div className="carousel-header">
         <div>
-          <div className="section-title">{title}</div>
+          <div className={`section-title ${titleClass}`}>{title}</div>
           {subtitle && <p className="muted" style={{ fontSize: 12, margin: '2px 0 0' }}>{subtitle}</p>}
         </div>
         <div className="carousel-controls">

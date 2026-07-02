@@ -36,9 +36,13 @@
 
 * { box-sizing: border-box; }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
-  min-width: 1180px;
+  min-width: 1020px;
   min-height: 100vh;
   background: linear-gradient(155deg, #F6F9FF 0%, #EEF4FF 30%, #F0F5FF 60%, #F8FAFF 100%);
   background-attachment: fixed;
@@ -381,27 +385,52 @@ button:disabled {
   display: flex;
   gap: 20px;
   margin-top: 20px;
-  align-items: flex-start;
+  align-items: stretch;
 }
 
 .left-conclusion-panel {
-  flex: 0 0 40%;
-  min-width: 380px;
+  flex: 0 0 38%;
+  min-width: 340px;
+  max-width: 520px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  position: sticky;
-  top: 12px;
-  max-height: calc(100vh - 140px);
-  overflow-y: auto;
+  gap: 14px;
 }
 
 .right-data-panel {
-  flex: 1 1 60%;
-  min-width: 460px;
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-height: 100%;
+}
+
+/* Ensure panels inside right panel fill available height */
+.right-data-panel > .panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.right-data-panel > .panel > .section-heading,
+.right-data-panel > .panel > .tab-bar,
+.right-data-panel > .panel > .filter-toolbar {
+  flex-shrink: 0;
+}
+
+.right-data-panel > .panel > .table-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.right-data-panel > .panel > .empty-state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -413,19 +442,28 @@ button:disabled {
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border-radius: var(--card-radius-sm);
-  padding: 18px 20px;
+  padding: 14px 16px;
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
 }
 
 .conclusion-section .section-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: .04em;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
+  padding-left: 12px;
+  border-left: 3px solid transparent;
 }
+
+/* Color-coded left border indicators per section type */
+.conclusion-section .section-title.status-indicator   { border-left-color: #2563EB; }
+.conclusion-section .section-title.danger-indicator   { border-left-color: #F43F5E; }
+.conclusion-section .section-title.warning-indicator  { border-left-color: #F59E0B; }
+.conclusion-section .section-title.orange-indicator   { border-left-color: #F59E0B; }
+.conclusion-section .section-title.tip-indicator      { border-left-color: #7C3AED; }
 
 .conclusion-item {
   display: flex;
@@ -590,11 +628,14 @@ button:disabled {
 .suggestions-list li:last-child { border-bottom: none; }
 
 .suggestions-list li::before {
-  content: '💡';
+  content: '';
   position: absolute;
-  left: -2px;
-  top: 8px;
-  font-size: 12px;
+  left: 4px;
+  top: 14px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2563EB;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -743,7 +784,6 @@ button:disabled {
   overflow: auto;
   border: 1px solid rgba(148, 163, 184, 0.12);
   border-radius: var(--card-radius-sm);
-  max-height: 620px;
   background: rgba(255, 255, 255, 0.55);
 }
 
@@ -2172,11 +2212,19 @@ tbody tr:hover td {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   Charts Grid — last odd child spans full width
+   ═══════════════════════════════════════════════════════════ */
+
+.charts-grid .chart-card:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+/* ═══════════════════════════════════════════════════════════
    Responsive
    ═══════════════════════════════════════════════════════════ */
 
 @media (max-width: 1280px) {
-  body { min-width: 1000px; }
+  body { min-width: 0; }
 
   .dashboard { width: calc(100vw - 32px); }
 
@@ -2203,7 +2251,7 @@ tbody tr:hover td {
   .stage-stats-row { grid-template-columns: repeat(1, minmax(0, 1fr)); }
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1100px) {
   .dashboard-split {
     flex-direction: column;
   }
@@ -2212,9 +2260,7 @@ tbody tr:hover td {
     flex: none;
     width: 100%;
     min-width: 0;
-    position: static;
-    max-height: none;
-    overflow-y: visible;
+    max-width: none;
     flex-direction: row;
     flex-wrap: wrap;
     gap: 12px;
@@ -2222,7 +2268,7 @@ tbody tr:hover td {
 
   .left-conclusion-panel > * {
     flex: 1 1 calc(50% - 6px);
-    min-width: 280px;
+    min-width: 260px;
   }
 
   .right-data-panel { min-width: 0; width: 100%; }

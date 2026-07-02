@@ -9,6 +9,7 @@ import RightDataPanel from '../components/RightDataPanel.jsx';
 import StatsCards from '../components/StatsCards.jsx';
 import TimeAnalysis from '../components/TimeAnalysis.jsx';
 import UploadExcel from '../components/UploadExcel.jsx';
+import ErrorDetailModal from '../components/ErrorDetailModal.jsx';
 import WorkorderDetailModal from '../components/WorkorderDetailModal.jsx';
 import { downloadReviewReport } from '../utils/report.js';
 
@@ -78,6 +79,7 @@ export default function Dashboard() {
 
   // Detail modal state
   const [detailWorkorder, setDetailWorkorder] = useState(null);
+  const [errorDetail, setErrorDetail] = useState(null);
 
   async function loadDashboardData(nextSourceId = sourceId) {
     if (!nextSourceId) return;
@@ -289,6 +291,7 @@ export default function Dashboard() {
           stats={stats}
           onFilterChange={handleFilterChange}
           activeFilter={activeFilter}
+          onErrorCardClick={setErrorDetail}
         />
         <RightDataPanel
           activeTab={activeTab}
@@ -340,6 +343,18 @@ export default function Dashboard() {
           stats={stats}
           onClose={() => setShowClassificationPanel(false)}
           onReanalyzed={handleReanalyzed}
+        />
+      )}
+
+      {/* Error Detail Modal */}
+      {errorDetail && (
+        <ErrorDetailModal
+          item={errorDetail}
+          onClose={() => setErrorDetail(null)}
+          onViewExample={(example) => {
+            setErrorDetail(null);
+            setDetailWorkorder(example);
+          }}
         />
       )}
 

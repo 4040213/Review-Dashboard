@@ -231,52 +231,6 @@ function buildBarOption(title, data, color = chartColors.purple) {
   };
 }
 
-// ── Stacked Progress Bar (for status breakdown) ──
-function buildStatusBarOption(title, data) {
-  const statusGroups = normalizeData(data).slice(0, 8);
-  const safeData = statusGroups.length ? statusGroups : [{ name: '暂无数据', value: 0 }];
-  const total = safeData.reduce((sum, item) => sum + item.value, 0);
-
-  const statusColorMap = {
-    '已归档': chartColors.green,
-    '待验收': chartColors.blue,
-    '处理中': chartColors.orange,
-    '暂停/挂起': chartColors.gray,
-    '待教研验收': chartColors.cyan,
-    '完成归档': chartColors.green,
-  };
-
-  // Build a single stacked bar for each status
-  const seriesData = safeData.map((item) => ({
-    name: item.name,
-    value: item.value,
-    itemStyle: {
-      color: statusColorMap[item.name] || palette[safeData.indexOf(item) % palette.length],
-      borderRadius: item.name === safeData[safeData.length - 1].name ? [0, 8, 8, 0] : 0
-    }
-  }));
-
-  return {
-    ...baseChartOption,
-    title: { text: title, left: 0, top: 0, textStyle: { color: '#0F172A', fontSize: 15, fontWeight: 800 } },
-    tooltip: {
-      ...baseChartOption.tooltip,
-      trigger: 'item',
-      formatter: (params) => `<b>${params.name}</b><br/>数量：<b>${params.value}</b> 条<br/>占比：${total > 0 ? Math.round(params.value / total * 100) : 0}%`
-    },
-    grid: { top: 46, left: 36, right: 32, bottom: 20, containLabel: true },
-    xAxis: { type: 'value', minInterval: 1, axisLabel: { color: '#94A3B8', fontSize: 11 }, splitLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.15)', type: 'dashed' } } },
-    yAxis: { type: 'category', data: ['状态分布'], axisLabel: { color: '#475569', fontSize: 12 }, axisTick: { show: false }, axisLine: { show: false } },
-    series: [{
-      type: 'bar', stack: 'total',
-      data: seriesData,
-      barMaxWidth: 28,
-      label: { show: true, position: 'inside', color: '#fff', fontWeight: 700, fontSize: 11, formatter: (p) => p.value > 0 ? p.value : '' },
-      emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.15)' } }
-    }]
-  };
-}
-
 export default function Charts({ stats }) {
   const chartItems = [
     // 1. Donut — issue category proportion (the primary way to see category distribution)
@@ -287,10 +241,8 @@ export default function Charts({ stats }) {
     { title: '高频出错内容 Top10', option: buildHorizontalBarOption('高频出错内容 Top10', stats.errorContentRanking, chartColors.blue), span: 2 },
     // 4. Vertical bar — grade distribution
     { title: '年级问题分布', option: buildBarOption('年级问题分布', stats.gradeRanking, chartColors.purple), span: 1 },
-    // 5. Area chart — week trend (changed from bar to area for diversity)
-    { title: '周次问题趋势', option: buildAreaOption('周次问题趋势', stats.weekRanking, chartColors.cyan), span: 1 },
-    // 6. Stacked bar — status distribution (replaces duplicate bar chart)
-    { title: '工单状态分布', option: buildStatusBarOption('工单状态分布', stats.statusRanking), span: 2 },
+    // 5. Area chart — week trend
+    { title: '周次问题趋势', option: buildAreaOption('周次问题趋势', stats.weekRanking, chartColors.cyan), span: 2 },
   ];
 
   return (
@@ -299,7 +251,7 @@ export default function Charts({ stats }) {
         <div>
           <p className="eyebrow">Supporting Charts</p>
           <h2>辅助分析图表</h2>
-          <p className="muted">多样化图表辅助查看问题类型、高频出错内容、年级/周次分布及状态构成。核心结论以左侧排行卡片为准。</p>
+          <p className="muted">多样化图表辅助查看问题类型、高频出错内容、年级/周次分布。核心结论以左侧排行卡片为准，状态分布见上方状态概览。</p>
         </div>
       </div>
       <div className="charts-grid inner-charts-grid">
@@ -307,7 +259,6 @@ export default function Charts({ stats }) {
           <div
             className="chart-card compact-chart-card"
             key={item.title}
-            style={item.span === 2 ? { gridColumn: '1 / -1' } : undefined}
           >
             <ReactECharts option={item.option} style={{ height: 300 }} />
           </div>

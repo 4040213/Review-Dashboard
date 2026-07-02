@@ -12,7 +12,7 @@ function formatList(values) {
   return values.slice(0, 5).join('、');
 }
 
-export default function LeftConclusionPanel({ stats, onFilterChange, activeFilter }) {
+export default function LeftConclusionPanel({ stats, onFilterChange, activeFilter, onErrorCardClick }) {
   const [activeSection, setActiveSection] = useState(null);
   const [activeItemKey, setActiveItemKey] = useState(null);
 
@@ -35,6 +35,10 @@ export default function LeftConclusionPanel({ stats, onFilterChange, activeFilte
     setActiveSection(section);
     setActiveItemKey(key);
     onFilterChange?.({ type: section, value: key, label: key, keywords: item.examples?.flatMap((e) => e.issueKeywords || []) || [] });
+    // Show error detail modal for error and rework items
+    if (section === 'error' || section === 'rework') {
+      onErrorCardClick?.(item);
+    }
   }
 
   function handleStatusGroupClick(group) {
@@ -83,7 +87,7 @@ export default function LeftConclusionPanel({ stats, onFilterChange, activeFilte
 
       {/* Status Distribution */}
       <section className="conclusion-section">
-        <div className="section-title">📊 状态分布</div>
+        <div className="section-title status-indicator">状态分布</div>
         <div className="compact-status-bar">
           {statusOrder.map((group) => {
             const count = groupMap.get(group)?.count || 0;
@@ -119,7 +123,8 @@ export default function LeftConclusionPanel({ stats, onFilterChange, activeFilte
       )}
 
       <CarouselSection
-        title="🔴 高频出错内容 Top5"
+        title="高频出错内容 Top5"
+        titleClass="danger-indicator"
         subtitle="按「所属类型 + 问题一级分类 + 问题关键词」聚合"
         items={errorTop5}
         autoPlay={errorTop5.length > 2}
@@ -154,7 +159,8 @@ export default function LeftConclusionPanel({ stats, onFilterChange, activeFilte
       {/* Unclear Requirement & Rework — Lightweight Carousel */}
       {(unclearTop3.length > 0 || reworkTop.length > 0) && (
         <CarouselSection
-          title="🟡 需求不明确与反复调整"
+          title="需求不明确与反复调整"
+          titleClass="warning-indicator"
           subtitle="最容易造成沟通成本和返工风险的工单类型"
           items={[...unclearTop3.map((item) => ({ ...item, cardType: 'unclear' })), ...reworkTop.map((item) => ({ ...item, cardType: 'rework' }))]}
           autoPlay={[...unclearTop3, ...reworkTop].length > 3}
@@ -207,7 +213,7 @@ export default function LeftConclusionPanel({ stats, onFilterChange, activeFilte
       {/* Fallback if no data */}
       {errorTop5.length === 0 && unclearTop3.length === 0 && reworkTop.length === 0 && (
         <section className="conclusion-section">
-          <div className="section-title">🔴 高频出错内容 Top5</div>
+          <div className="section-title danger-indicator">高频出错内容 Top5</div>
           <div className="empty-state small-empty" style={{ padding: 16, fontSize: 13 }}>暂无高频出错内容</div>
         </section>
       )}
@@ -215,7 +221,7 @@ export default function LeftConclusionPanel({ stats, onFilterChange, activeFilte
       {/* Rework Root Causes Summary */}
       {reworkCauses.length > 0 && (
         <section className="conclusion-section">
-          <div className="section-title">🟠 反复修改根因分布</div>
+          <div className="section-title orange-indicator">反复修改根因分布</div>
           {reworkCauses.map((cause) => (
             <div
               key={cause.label}
@@ -234,7 +240,7 @@ export default function LeftConclusionPanel({ stats, onFilterChange, activeFilte
 
       {/* Improvement Suggestions */}
       <section className="conclusion-section">
-        <div className="section-title">💡 改进建议</div>
+        <div className="section-title tip-indicator">改进建议</div>
         {suggestions.length > 0 ? (
           <ul className="suggestions-list">
             {suggestions.map((s, i) => <li key={i}>{s}</li>)}

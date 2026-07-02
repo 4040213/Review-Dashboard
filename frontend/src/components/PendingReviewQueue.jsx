@@ -51,7 +51,7 @@ export default function PendingReviewQueue({ data, onToggleUrgent }) {
     <div className="panel" style={{ marginTop: 12 }}>
       <div className="section-heading" style={{ marginBottom: 16 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: 16 }}>📋 待教研验收队列</h2>
+          <h2 style={{ margin: 0, fontSize: 16 }}>待教研验收队列</h2>
           <p className="muted" style={{ margin: '4px 0 0' }}>
             ⏱ 平均等待 {avgWaitDays.toFixed(1)} 天
             {over7Count > 0 && <span style={{ color: '#F43F5E', marginLeft: 12 }}>🚨 积压超 7 天：{over7Count} 条</span>}
