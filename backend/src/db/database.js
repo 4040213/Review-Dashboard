@@ -77,7 +77,13 @@ export async function initDatabase() {
     ['repeatedAdjustmentReasons', 'TEXT'],
     ['suggestions', 'TEXT'],
     ['isValidForAnalysis', 'INTEGER DEFAULT 1'],
-    ['invalidReasons', 'TEXT']
+    ['invalidReasons', 'TEXT'],
+    ['invalidType', 'TEXT'],
+    ['reworkRootCause', 'TEXT'],
+    ['reworkRootCauseReason', 'TEXT'],
+    ['passCount', 'INTEGER DEFAULT 0'],
+    ['rejectCount', 'INTEGER DEFAULT 0'],
+    ['isUrgent', 'INTEGER DEFAULT 0']
   ].forEach(([name, definition]) => ensureColumn(name, definition));
 
   saveDatabase();
@@ -96,8 +102,9 @@ export async function replaceWorkorders(workorders, source = getDataSource(defau
         acceptedAt, archivedAt, owner, researcher, issueCategory, issueKeywords,
         isUnclearRequirement, unclearReasons, riskLevel, riskReasons,
         isRepeatedAdjustmentCandidate, repeatedAdjustmentReasons, suggestions,
-        isValidForAnalysis, invalidReasons
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        isValidForAnalysis, invalidReasons, invalidType, reworkRootCause,
+        reworkRootCauseReason, passCount, rejectCount, isUrgent
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     workorders.forEach((item) => {
@@ -131,7 +138,13 @@ export async function replaceWorkorders(workorders, source = getDataSource(defau
         JSON.stringify(item.repeatedAdjustmentReasons ?? []),
         JSON.stringify(item.suggestions ?? []),
         item.isValidForAnalysis ? 1 : 0,
-        JSON.stringify(item.invalidReasons ?? [])
+        JSON.stringify(item.invalidReasons ?? []),
+        item.invalidType || null,
+        item.reworkRootCause || null,
+        item.reworkRootCauseReason || null,
+        item.passCount || 0,
+        item.rejectCount || 0,
+        item.isUrgent ? 1 : 0
       ]);
     });
 
@@ -195,7 +208,13 @@ export async function getAllWorkorders(sourceId = defaultSourceId) {
       repeatedAdjustmentReasons: parseJsonArray(item.repeatedAdjustmentReasons),
       suggestions: parseJsonArray(item.suggestions),
       isValidForAnalysis: item.isValidForAnalysis === null || item.isValidForAnalysis === undefined ? true : Boolean(item.isValidForAnalysis),
-      invalidReasons: parseJsonArray(item.invalidReasons)
+      invalidReasons: parseJsonArray(item.invalidReasons),
+      invalidType: item.invalidType || null,
+      reworkRootCause: item.reworkRootCause || null,
+      reworkRootCauseReason: item.reworkRootCauseReason || null,
+      passCount: item.passCount || 0,
+      rejectCount: item.rejectCount || 0,
+      isUrgent: Boolean(item.isUrgent)
     };
   });
 }

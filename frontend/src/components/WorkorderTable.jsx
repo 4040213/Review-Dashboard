@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 
 function joinValues(values) {
   return values?.length ? values.join('、') : '-';
 }
 
-const columns = [
+const baseColumns = [
   {
     accessorKey: 'isValidForAnalysis',
     header: '是否有效分析',
@@ -18,7 +18,24 @@ const columns = [
   { accessorKey: 'grade', header: '年级' },
   { accessorKey: 'week', header: '周' },
   { accessorKey: 'type', header: '所属类型' },
-  { accessorKey: 'issueCategory', header: '问题一级分类' },
+  {
+    accessorKey: 'issueCategory',
+    header: '问题一级分类',
+    cell: ({ row }) => (
+      <span className="classification-reason">
+        {row.original.issueCategory || '其他'}
+        {(row.original.issueKeywords?.length > 0) && (
+          <>
+            <span className="info-icon">?</span>
+            <span className="reason-popover">
+              匹配关键词：{joinValues(row.original.issueKeywords)}<br />
+              分类规则：{row.original.issueCategory}
+            </span>
+          </>
+        )}
+      </span>
+    )
+  },
   { accessorKey: 'issueKeywords', header: '问题关键词', cell: ({ getValue }) => joinValues(getValue()) },
   { accessorKey: 'isUnclearRequirement', header: '是否需求不明确', cell: ({ getValue }) => (getValue() ? <span className="tag warning">是</span> : <span className="tag muted-tag">否</span>) },
   { accessorKey: 'unclearReasons', header: '不明确原因', cell: ({ getValue }) => joinValues(getValue()) },
@@ -32,6 +49,21 @@ const columns = [
   { accessorKey: 'invalidReasons', header: '无效原因', cell: ({ getValue }) => joinValues(getValue()) },
   { accessorKey: 'description', header: '问题描述', cell: ({ getValue }) => <span className="description-cell">{getValue() || '-'}</span> }
 ];
+
+const invalidTypeColumn = {
+  accessorKey: 'invalidType',
+  header: '无效类型',
+  cell: ({ getValue }) => {
+    const type = getValue();
+    const labels = {
+      collaboration_placeholder: '📄 协作占位',
+      test_data: '🧪 测试数据',
+      blank: '📭 空白/无效',
+      incomplete: '⚠️ 信息不完整'
+    };
+    return labels[type] || '-';
+  }
+};
 
 const defaultFilters = {
   isValidForAnalysis: '',
@@ -63,17 +95,52 @@ function FilterSelect({ label, value, options, onChange }) {
       <select value={value} onChange={(event) => onChange(event.target.value)}>
         <option value="">全部</option>
         {options.map((option) => {
-          const value = typeof option === 'string' ? option : option.value;
+          const optionValue = typeof option === 'string' ? option : option.value;
           const text = typeof option === 'string' ? option : option.label;
-          return <option value={value} key={value}>{text}</option>;
+          return <option value={optionValue} key={optionValue}>{text}</option>;
         })}
       </select>
     </label>
   );
 }
 
-export default function WorkorderTable({ workorders }) {
+export default function WorkorderTable({ workorders, activeFilter, showInvalidType }) {
   const [filters, setFilters] = useState(defaultFilters);
+
+  // Sync activeFilter from left panel clicks to table filters
+  useEffect(() => {
+    if (!activeFilter) return;
+    const next = { ...defaultFilters };
+    switch (activeFilter.type) {
+      case 'errorContent':
+        // Filter by matching issueCategory + keywords
+        next.issueCategory = activeFilter.value;
+        break;
+      case 'unclearReason':
+        next.isUnclearRequirement = 'true';
+        break;
+      case 'statusGroup':
+        next.statusGroup = activeFilter.value;
+        break;
+      case 'riskLevel':
+        next.riskLevel = '高';
+        break;
+      case 'isUnclearRequirement':
+        next.isUnclearRequirement = 'true';
+        break;
+      case 'isRepeatedAdjustment':
+        next.keyword = '';
+        // Repeated adjustment isn't directly filterable in old filters
+        break;
+      case 'scope':
+        if (activeFilter.value === 'valid') next.isValidForAnalysis = 'true';
+        if (activeFilter.value === 'invalid') next.isValidForAnalysis = 'false';
+        break;
+      default:
+        break;
+    }
+    setFilters(next);
+  }, [activeFilter?.type, activeFilter?.value]);
 
   const filterOptions = useMemo(() => ({
     grade: uniqueOptions(workorders, 'grade'),
@@ -106,6 +173,27 @@ export default function WorkorderTable({ workorders }) {
     });
   }, [filters, workorders]);
 
+  // Compute highlighted row IDs from activeFilter keywords
+  const highlightedIds = useMemo(() => {
+    if (!activeFilter?.keywords?.length) return new Set();
+    const lowerKeywords = activeFilter.keywords.map((k) => String(k).toLowerCase());
+    return new Set(
+      workorders
+        .filter((w) => lowerKeywords.some((k) => String(w.description || '').toLowerCase().includes(k) || (w.issueKeywords || []).some((ik) => String(ik).toLowerCase().includes(k))))
+        .map((w) => w.id)
+    );
+  }, [activeFilter?.keywords, workorders]);
+
+  // Build columns with optional invalidType
+  const columns = useMemo(() => {
+    if (showInvalidType) {
+      const cols = [...baseColumns];
+      cols.splice(1, 0, invalidTypeColumn); // Insert after isValidForAnalysis
+      return cols;
+    }
+    return baseColumns;
+  }, [showInvalidType]);
+
   const table = useReactTable({ data: filteredWorkorders, columns, getCoreRowModel: getCoreRowModel() });
 
   function updateFilter(key, value) {
@@ -113,24 +201,27 @@ export default function WorkorderTable({ workorders }) {
   }
 
   function getRowClassName(item) {
-    if (!item.isValidForAnalysis) return 'invalid-row';
-    if (item.riskLevel === '高') return 'high-risk-row';
-    if (item.isUnclearRequirement) return 'unclear-row';
-    return '';
+    const classes = [];
+    if (highlightedIds.has(item.id)) classes.push('highlighted-row');
+    if (!item.isValidForAnalysis) classes.push('invalid-row');
+    if (item.riskLevel === '高') classes.push('high-risk-row');
+    if (item.isUnclearRequirement) classes.push('unclear-row');
+    return classes.join(' ');
   }
 
   return (
-    <section className="panel table-panel">
+    <section className="panel table-panel" style={{ marginTop: 12 }}>
       <div className="section-heading">
         <div>
           <p className="eyebrow">Detail Data</p>
           <h2>工单明细</h2>
-          <p className="muted">当前显示：{filteredWorkorders.length} / {workorders.length} 条，可筛选查看全部工单、有效工单或无效工单。</p>
+          <p className="muted">当前显示：{filteredWorkorders.length} / {workorders.length} 条</p>
         </div>
         <span className="count-badge">{filteredWorkorders.length} / {workorders.length} 条</span>
       </div>
 
-      <div className="filters-grid">
+      {/* Inline filters — kept for standalone use, hidden when FilterToolbar is active */}
+      <div className="filters-grid" style={showInvalidType !== undefined ? { display: 'none' } : {}}>
         <FilterSelect label="是否有效分析" value={filters.isValidForAnalysis} options={[{ value: 'true', label: '有效工单' }, { value: 'false', label: '无效工单' }]} onChange={(value) => updateFilter('isValidForAnalysis', value)} />
         <FilterSelect label="无效原因" value={filters.invalidReason} options={filterOptions.invalidReason} onChange={(value) => updateFilter('invalidReason', value)} />
         <FilterSelect label="状态分组" value={filters.statusGroup} options={filterOptions.statusGroup} onChange={(value) => updateFilter('statusGroup', value)} />

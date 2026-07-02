@@ -405,3 +405,18 @@ frontend/node_modules
 - 增加典型案例列表。
 - 增加复盘报告导出。
 - 增加历史批次和趋势对比。
+
+
+
+启动方式
+后端：
+
+cd d:\A工作\复盘看板\workorder-dashboard\backend
+npm run dev
+前端：
+
+cd d:\A工作\复盘看板\workorder-dashboard\frontend
+npm run dev
+浏览器打开 Vite 输出地址，通常是：
+
+http://localhost:5173/

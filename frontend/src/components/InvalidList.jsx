@@ -1,0 +1,114 @@
+import { useState } from 'react';
+
+const INVALID_TYPE_LABELS = {
+  collaboration_placeholder: { label: '📄 协作占位', desc: '组课文档等多人协作中间产物，非真实问题工单', color: '#2878ff' },
+  test_data: { label: '🧪 测试数据', desc: '测试或调试用占位数据', color: '#b54708' },
+  blank: { label: '📭 空白/无效', desc: '描述为空或仅为占位符（如"-""/""无"）', color: '#94a3b8' },
+  incomplete: { label: '⚠️ 信息不完整', desc: '核心字段缺失或描述过短无法分类', color: '#d92d20' }
+};
+
+function InvalidGroup({ type, workorders, counts }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const info = INVALID_TYPE_LABELS[type] || { label: type, desc: '', color: '#64748b' };
+  const count = counts[type] || 0;
+
+  if (count === 0) return null;
+
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div
+        onClick={() => setCollapsed(!collapsed)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '10px 14px',
+          background: '#f8fafc',
+          borderRadius: 10,
+          cursor: 'pointer',
+          borderLeft: `3px solid ${info.color}`
+        }}
+      >
+        <span style={{ fontSize: 18 }}>{collapsed ? '▶' : '▼'}</span>
+        <span style={{ fontWeight: 600, fontSize: 14, color: '#172033', flex: 1 }}>{info.label}</span>
+        <span className="count-badge">{count} 条</span>
+      </div>
+      {!collapsed && (
+        <div style={{ padding: '8px 14px 0' }}>
+          <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 8px' }}>{info.desc}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {workorders.filter((w) => w.invalidType === type).slice(0, 20).map((w) => (
+              <div
+                key={w.id}
+                style={{
+                  fontSize: 13,
+                  padding: '8px 12px',
+                  background: '#fff',
+                  borderRadius: 6,
+                  border: '1px solid rgba(126,146,176,0.12)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  gap: 12
+                }}
+              >
+                <span style={{ color: '#475467', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {w.description || <em style={{ color: '#94a3b8' }}>无描述</em>}
+                </span>
+                <span style={{ color: '#94a3b8', whiteSpace: 'nowrap', fontSize: 11 }}>
+                  {w.type || '-'} · {w.grade || '-'} {w.week || ''}
+                </span>
+              </div>
+            ))}
+            {count > 20 && <p style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center' }}>还有 {count - 20} 条未显示...</p>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function InvalidList({ data, workorders }) {
+  const invalidItems = data?.length
+    ? data
+    : (workorders || []).filter((w) => !w.isValidForAnalysis);
+
+  if (!invalidItems.length) {
+    return (
+      <div className="panel" style={{ marginTop: 12 }}>
+        <div className="empty-state small-empty">暂无不合格工单 🎉</div>
+      </div>
+    );
+  }
+
+  const counts = {};
+  invalidItems.forEach((w) => {
+    const type = w.invalidType || 'incomplete';
+    counts[type] = (counts[type] || 0) + 1;
+  });
+
+  return (
+    <div className="panel" style={{ marginTop: 12 }}>
+      <div className="section-heading" style={{ marginBottom: 16 }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: 16 }}>不合格工单</h2>
+          <p className="muted" style={{ margin: '4px 0 0' }}>
+            共 {invalidItems.length} 条工单未进入核心分析（含协作占位、测试数据、空白无效、信息不完整）
+          </p>
+        </div>
+      </div>
+
+      {Object.keys(INVALID_TYPE_LABELS).map((type) => (
+        <InvalidGroup key={type} type={type} workorders={invalidItems} counts={counts} />
+      ))}
+
+      {/* Fallback for items without a typed invalidType */}
+      {invalidItems.filter((w) => !INVALID_TYPE_LABELS[w.invalidType]).length > 0 && (
+        <InvalidGroup
+          type="incomplete"
+          workorders={invalidItems}
+          counts={{ incomplete: invalidItems.filter((w) => !INVALID_TYPE_LABELS[w.invalidType]).length }}
+        />
+      )}
+    </div>
+  );
+}

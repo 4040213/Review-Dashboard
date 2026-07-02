@@ -49,3 +49,59 @@ export function syncFeishu(sourceId) {
 export function getFeishuStatus() {
   return request('/feishu/status');
 }
+
+// Classification rules
+export function getClassificationRules() {
+  return request('/classification-rules');
+}
+
+export function updateClassificationRules(rules) {
+  return request('/classification-rules', {
+    method: 'PUT',
+    body: JSON.stringify(rules),
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+export function reanalyzeWorkorders(sourceId) {
+  return request(withSource('/classification-rules/reanalyze', sourceId), { method: 'POST' });
+}
+
+export function resetClassificationRules() {
+  return request('/classification-rules/reset', { method: 'POST' });
+}
+
+export function exportClassificationRules() {
+  return request('/classification-rules/export');
+}
+
+export function importClassificationRules(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return request('/classification-rules/import', { method: 'POST', body: formData });
+}
+
+// Pending review, rework, invalid
+export function getPendingReview(sourceId) {
+  return request(withSource('/workorders/pending-review', sourceId));
+}
+
+export function getReworkWorkorders(sourceId) {
+  return request(withSource('/workorders/rework', sourceId));
+}
+
+export function getInvalidWorkorders(sourceId) {
+  return request(withSource('/workorders/invalid', sourceId));
+}
+
+export function toggleUrgent(id, isUrgent) {
+  return request(`/workorders/${encodeURIComponent(id)}/urgent`, {
+    method: 'PATCH',
+    body: JSON.stringify({ isUrgent }),
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+export function getPassRate(sourceId) {
+  return request(withSource('/workorders/pass-rate', sourceId));
+}

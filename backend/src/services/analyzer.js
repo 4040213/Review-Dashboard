@@ -1,4 +1,4 @@
-import { issueRules } from '../rules/issueRules.js';
+import { issueRules, getActiveIssueRules } from '../rules/issueRules.js';
 import { unclearRules } from '../rules/riskRules.js';
 
 const repeatedAdjustmentKeywords = ['还是', '仍然', '重新', '再改', '又', '没改到', '继续改', '二次修改', '返工', '反复'];
@@ -6,6 +6,16 @@ const highRiskReworkKeywords = ['还是', '仍然', '重新', '再改', '没改�
 const statusDone = '完成归档';
 const placeholderDescriptions = ['组课文档', '测试', '占位', '无', '暂无', '待补充', '-', '/'];
 const validShortIssues = ['不对', '错了', '不显示', '不出现', '无法点击'];
+const invalidTypeRules = [
+  { type: 'collaboration_placeholder', keywords: ['组课文档', '课程文档', '教研文档'] },
+  { type: 'test_data', keywords: ['测试', 'test', '调试', 'demo'] },
+  { type: 'blank', keywords: ['无', '暂无', '-', '/', '待补充', '占位'] }
+];
+const reworkRootCauseRules = [
+  { cause: 'unclear_requirement', check: (w) => w.isUnclearRequirement && w.isRepeatedAdjustmentCandidate },
+  { cause: 'execution_gap', check: (w) => w.isRepeatedAdjustmentCandidate && !w.isUnclearRequirement },
+  { cause: 'batch_issue', check: (w) => (w.issueKeywords?.length || 0) >= 2 && w.isRepeatedAdjustmentCandidate }
+];
 
 const statusGroupRules = [
   { group: '已归档', statuses: ['完成归档'] },
@@ -34,9 +44,11 @@ function getStatusGroup(status) {
   return statusGroupRules.find((rule) => rule.statuses.includes(status))?.group || '其他';
 }
 
-function getIssueMatch(description) {
+function getIssueMatch(description, customRules) {
   const text = description || '';
-  for (const rule of issueRules) {
+  const rules = customRules || issueRules;
+  for (const rule of rules) {
+    if (!rule.keywords?.length) continue;
     const matchedKeywords = rule.keywords.filter((keyword) => includesKeyword(text, keyword));
     if (matchedKeywords.length > 0) return { issueCategory: rule.category, issueKeywords: matchedKeywords };
   }
@@ -46,6 +58,41 @@ function getIssueMatch(description) {
 function getUnclearReasons(description) {
   const text = description || '';
   return unclearRules.filter((rule) => rule.keywords.some((keyword) => includesKeyword(text, keyword))).map((rule) => rule.reason);
+}
+
+function getInvalidType(workorder) {
+  const description = String(workorder.description || '').trim();
+  if (!description) return 'blank';
+  for (const rule of invalidTypeRules) {
+    if (rule.keywords.some((kw) => includesKeyword(description, kw))) return rule.type;
+  }
+  if (!workorder.coursePosition || !workorder.type || !workorder.status) return 'incomplete';
+  if (description.length < 6 && !validShortIssues.includes(description)) return 'incomplete';
+  return null;
+}
+
+function getReworkRootCause(workorder) {
+  for (const rule of reworkRootCauseRules) {
+    if (rule.check(workorder)) return { reworkRootCause: rule.cause };
+  }
+  return {};
+}
+
+function calcPassRateStats(workorders) {
+  const valid = workorders.filter((w) => w.isValidForAnalysis);
+  const archived = valid.filter((w) => w.status === statusDone);
+  const everInReview = valid.filter((w) =>
+    w.status === '待教研验收' || w.status === '教研验收中' || w.status === statusDone
+  );
+  const passRate = everInReview.length > 0 ? percent(archived.length, everInReview.length) : null;
+
+  // Estimate rejections from status transitions
+  let totalRejects = 0;
+  valid.forEach((w) => {
+    if (w.rejectCount) totalRejects += w.rejectCount;
+  });
+
+  return { passRate, passTotal: everInReview.length, totalRejects };
 }
 
 function getInvalidReasons(workorder) {
@@ -121,13 +168,16 @@ function buildSuggestions(workorder) {
   return uniq(suggestions);
 }
 
-export function analyzeWorkorders(workorders) {
+export function analyzeWorkorders(workorders, customRules) {
+  const rules = customRules || null;
+
   const withCategory = workorders.map((workorder) => {
-    const issueMatch = getIssueMatch(workorder.description);
+    const issueMatch = getIssueMatch(workorder.description, rules);
     const unclearReasons = getUnclearReasons(workorder.description);
-    const base = { ...workorder, issueCategory: issueMatch.issueCategory, issueKeywords: issueMatch.issueKeywords, isUnclearRequirement: unclearReasons.length > 0, unclearReasons, statusGroup: getStatusGroup(workorder.status), riskLevel: '低', riskReasons: [], isRepeatedAdjustmentCandidate: false, repeatedAdjustmentReasons: [], suggestions: [] };
+    const base = { ...workorder, issueCategory: issueMatch.issueCategory, issueKeywords: issueMatch.issueKeywords, isUnclearRequirement: unclearReasons.length > 0, unclearReasons, statusGroup: getStatusGroup(workorder.status), riskLevel: '低', riskReasons: [], isRepeatedAdjustmentCandidate: false, repeatedAdjustmentReasons: [], suggestions: [], invalidType: null, reworkRootCause: null, reworkRootCauseReason: null };
     const invalidReasons = getInvalidReasons(base);
-    return { ...base, isValidForAnalysis: invalidReasons.length === 0, invalidReasons };
+    const invalidType = invalidReasons.length > 0 ? getInvalidType(base) : null;
+    return { ...base, isValidForAnalysis: invalidReasons.length === 0, invalidReasons, invalidType };
   });
 
   const validWorkorders = withCategory.filter((item) => item.isValidForAnalysis);
@@ -140,7 +190,8 @@ export function analyzeWorkorders(workorders) {
     const repeatedCount = keyCounts[getErrorContentKey(workorder)] || 0;
     const repeatedInfo = getRepeatedAdjustmentInfo(workorder, repeatedCount);
     const riskInfo = getRiskInfo(workorder, repeatedCount);
-    const analyzed = { ...workorder, ...riskInfo, ...repeatedInfo };
+    const rootCauseInfo = repeatedInfo.isRepeatedAdjustmentCandidate ? getReworkRootCause({ ...workorder, ...riskInfo, ...repeatedInfo }) : {};
+    const analyzed = { ...workorder, ...riskInfo, ...repeatedInfo, ...rootCauseInfo };
     return { ...analyzed, suggestions: buildSuggestions(analyzed) };
   });
 }
@@ -343,6 +394,7 @@ export function buildStats(workorders) {
   const issueCategoryRanking = rankByField(validWorkorders, 'issueCategory');
   const timeTrend = buildTimeTrend(validWorkorders);
   const durationStats = buildDurationStats(validWorkorders);
+  const passStats = calcPassRateStats(workorders);
 
   return {
     totalRawCount,
@@ -351,6 +403,9 @@ export function buildStats(workorders) {
     invalidAnalysisCount,
     unclearCount,
     unclearRate: percent(unclearCount, validAnalysisCount),
+    passRate: passStats.passRate,
+    passTotal: passStats.passTotal,
+    totalRejects: passStats.totalRejects,
     repeatedCandidateCount,
     repeatedAdjustmentCandidateCount: repeatedCandidateCount,
     repeatedAdjustmentRate: percent(repeatedCandidateCount, validAnalysisCount),

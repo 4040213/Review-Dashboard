@@ -69,3 +69,10 @@ desktop.ini
 
 # Cursor local files
 .cursor/
+
+.docs
+docs/
+
+# User classification rules (generated at runtime)
+backend/src/rules/userIssueRules.json
+
