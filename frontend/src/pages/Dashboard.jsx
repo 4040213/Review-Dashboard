@@ -74,6 +74,7 @@ export default function Dashboard() {
   const [filterState, setFilterState] = useState(defaultFilterState);
   const [bottomExpanded, setBottomExpanded] = useState(false);
   const [showClassificationPanel, setShowClassificationPanel] = useState(false);
+  const [dataSourceExpanded, setDataSourceExpanded] = useState(false);
 
   // Detail modal state
   const [detailWorkorder, setDetailWorkorder] = useState(null);
@@ -238,14 +239,14 @@ export default function Dashboard() {
       {/* Header */}
       <header className="hero">
         <div>
-          <p className="eyebrow">Workorder Review Dashboard</p>
-          <h1>试题生产工单复盘看板</h1>
-          <p>聚焦有效工单中的高频出错内容、需求不明确、状态流转和疑似反复调整问题。</p>
+          <p className="eyebrow">Course Production · Workorder Review</p>
+          <h1>课程生产工单复盘看板</h1>
+          <p>聚焦有效工单中的高频出错内容、需求不明确、状态流转和疑似反复调整问题，辅助团队持续改进生产质量。</p>
         </div>
         <div className="hero-actions">
           <span className={`health-badge ${health === '后端已连接' ? 'ok' : 'warn'}`}>{health}</span>
           <button className="secondary-button" type="button" disabled={!stats.totalRawCount} onClick={() => downloadReviewReport(stats)}>
-            导出复盘报告
+            📄 导出复盘报告
           </button>
           <button className="secondary-button" type="button" onClick={() => setShowClassificationPanel(true)} title="管理分类规则">
             ⚙ 分类规则
@@ -253,19 +254,36 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Data Source & Upload */}
-      <DataSourceBar
-        sources={sources} sourceId={sourceId} autoSyncEnabled={autoSyncEnabled}
-        lastSyncedAt={lastSyncedAt} syncing={syncing} syncMessage={syncMessage}
-        feishuStatus={feishuStatus} onSourceChange={setSourceId}
-        onAutoSyncChange={setAutoSyncEnabled} onManualSync={handleManualSync}
-      />
-      <UploadExcel sourceId={sourceId} onUploaded={handleUploaded} />
+      {/* Data Source & Upload — visually subdued, collapsible */}
+      <div className="bottom-collapsible" style={{ marginTop: 20 }}>
+        <button
+          className={`collapsible-toggle ${dataSourceExpanded ? 'open' : ''}`}
+          onClick={() => setDataSourceExpanded(!dataSourceExpanded)}
+          style={{ padding: '10px 18px', fontSize: 13 }}
+        >
+          <span className="toggle-icon">▶</span>
+          {dataSourceExpanded ? '收起' : '展开'} 数据源配置与上传
+          <span style={{ marginLeft: 8, fontSize: 12, color: '#94A3B8', fontWeight: 400 }}>
+            {sources.length ? `当前数据源：${sources.find(s => s.id === sourceId)?.name || '-'}` : '未配置'}
+          </span>
+        </button>
+        {dataSourceExpanded && (
+          <div className="collapsible-content">
+            <DataSourceBar
+              sources={sources} sourceId={sourceId} autoSyncEnabled={autoSyncEnabled}
+              lastSyncedAt={lastSyncedAt} syncing={syncing} syncMessage={syncMessage}
+              feishuStatus={feishuStatus} onSourceChange={setSourceId}
+              onAutoSyncChange={setAutoSyncEnabled} onManualSync={handleManualSync}
+            />
+            <UploadExcel sourceId={sourceId} onUploaded={handleUploaded} />
+          </div>
+        )}
+      </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards — prominent KPI row */}
       <StatsCards stats={stats} onFilterChange={handleFilterChange} />
 
-      {/* Main Split Layout */}
+      {/* Main Split Layout — conclusion (left) + data table (right) */}
       <div className="dashboard-split">
         <LeftConclusionPanel
           stats={stats}
@@ -287,7 +305,7 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Auto-scroll Focus Workorders */}
+      {/* Auto-scroll Focus Workorders — prominent */}
       <AutoScrollWorkorders
         workorders={focusWorkorders}
         onCardClick={setDetailWorkorder}

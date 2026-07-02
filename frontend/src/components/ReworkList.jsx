@@ -50,13 +50,13 @@ export default function ReworkList({ data, workorders }) {
           };
 
           return (
-            <article key={item.id} className="focus-card" style={{ borderLeft: '3px solid #d92d20' }}>
+            <article key={item.id} className="focus-card" style={{ borderLeft: '3px solid #F43F5E' }}>
               <div className="focus-card-top">
                 <div className="focus-tags">
                   <span className={`risk-tag risk-${item.riskLevel}`}>{item.riskLevel || '-'}</span>
                   {item.isUnclearRequirement && <span className="tag warning">需求不明确</span>}
                   {rootCause && (
-                    <span className="tag" style={{ background: '#fee4e2', color: '#b42318' }}>
+                    <span className="tag" style={{ background: 'rgba(244,63,94,0.1)', color: '#E11D48' }}>
                       {rootCauseLabels[rootCause] || rootCause}
                     </span>
                   )}
@@ -85,7 +85,7 @@ export default function ReworkList({ data, workorders }) {
 
               {/* Simple timeline from status timestamps */}
               {(item.submittedAt || item.resolvedAt || item.acceptedAt || item.archivedAt) && (
-                <div style={{ marginTop: 10, padding: '10px 14px', background: '#f8fafc', borderRadius: 8, fontSize: 12, color: '#475467' }}>
+                <div style={{ marginTop: 10, padding: '10px 14px', background: 'rgba(248,250,252,0.6)', borderRadius: 8, fontSize: 12, color: '#475467' }}>
                   <span style={{ fontWeight: 600, marginRight: 8 }}>📅 时间线：</span>
                   {item.submittedAt && <span>提交 {new Date(item.submittedAt).toLocaleDateString('zh-CN')}</span>}
                   {item.resolvedAt && <span style={{ marginLeft: 8 }}>→ 解决 {new Date(item.resolvedAt).toLocaleDateString('zh-CN')}</span>}

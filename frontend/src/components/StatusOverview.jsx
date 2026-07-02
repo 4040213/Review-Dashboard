@@ -18,9 +18,11 @@ function buildStatusOption(stats) {
     ...baseChartOption,
     tooltip: {
       trigger: 'item',
-      backgroundColor: 'rgba(15, 23, 42, 0.92)',
-      borderWidth: 0,
-      textStyle: { color: '#fff' },
+      backgroundColor: 'rgba(255, 255, 255, 0.88)',
+      borderColor: 'rgba(255, 255, 255, 0.75)',
+      borderWidth: 1,
+      textStyle: { color: '#0F172A' },
+      extraCssText: 'backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-radius: 14px; box-shadow: 0 12px 32px rgba(37, 99, 235, 0.12);',
       formatter: ({ seriesName, value, color }) => `<span style="display:inline-block;margin-right:6px;border-radius:50%;width:8px;height:8px;background:${color}"></span>${seriesName}<br/>${value} 条，占比 ${getPercent(groupMap, seriesName)}%`
     },
     grid: { top: 18, left: 8, right: 8, bottom: 8, containLabel: true },

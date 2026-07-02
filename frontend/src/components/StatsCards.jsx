@@ -25,37 +25,42 @@ export default function StatsCards({ stats, onFilterChange }) {
     {
       label: '总工单',
       value: totalRaw,
-      sub: `有效 ${validCount}`,
+      sub: `有效分析 ${validCount} 条`,
       clickable: true,
-      onClickType: 'totalValid'
+      onClickType: 'totalValid',
+      accent: '#2563EB'
     },
     {
       label: '归档率',
       value: `${archiveRate}%`,
-      sub: `${stats.archivedCount ?? 0} 条已归档`,
+      sub: `${stats.archivedCount ?? 0} 条已归档 · ${stats.unfinishedCount ?? 0} 条未完成`,
       clickable: false,
+      accent: '#10B981',
       warn: (stats.unfinishedCount ?? 0) > 0
     },
     {
       label: '验收通过率',
-      value: passRate !== null ? `${passRate}%` : '暂无',
-      sub: passRate !== null ? `${stats.passTotal ?? 0} 条验收` : '需要时间数据',
-      clickable: false
+      value: passRate !== null ? `${passRate}%` : '—',
+      sub: passRate !== null ? `${stats.passTotal ?? 0} 条验收` : '需时间字段数据',
+      clickable: false,
+      accent: '#06B6D4'
     },
     {
       label: '需求不明确',
       value: `${unclearCount} 条`,
-      sub: `占比 ${unclearRate}%`,
+      sub: `占有效工单 ${unclearRate}%`,
       clickable: true,
       onClickType: 'unclear',
+      accent: '#F59E0B',
       warn: unclearRate >= 20
     },
     {
-      label: '高风险',
-      value: `${highRiskCount} 条`,
-      sub: `反复调整 ${repeatedCount} 条`,
+      label: '高风险 / 反复调整',
+      value: `${highRiskCount} / ${repeatedCount}`,
+      sub: `反复调整占比 ${repeatedRate}%`,
       clickable: true,
       onClickType: 'highRisk',
+      accent: '#F43F5E',
       danger: highRiskCount > 0
     }
   ];
@@ -70,7 +75,7 @@ export default function StatsCards({ stats, onFilterChange }) {
           style={card.clickable ? { cursor: 'pointer' } : undefined}
         >
           <span>{card.label}</span>
-          <strong>{card.value}</strong>
+          <strong style={card.danger ? { color: '#E11D48' } : card.warn ? { color: '#D97706' } : { color: '#0F172A' }}>{card.value}</strong>
           <em>{card.sub}</em>
         </div>
       ))}

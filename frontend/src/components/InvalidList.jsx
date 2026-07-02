@@ -1,10 +1,10 @@
 import { useState } from 'react';
 
 const INVALID_TYPE_LABELS = {
-  collaboration_placeholder: { label: '📄 协作占位', desc: '组课文档等多人协作中间产物，非真实问题工单', color: '#2878ff' },
-  test_data: { label: '🧪 测试数据', desc: '测试或调试用占位数据', color: '#b54708' },
-  blank: { label: '📭 空白/无效', desc: '描述为空或仅为占位符（如"-""/""无"）', color: '#94a3b8' },
-  incomplete: { label: '⚠️ 信息不完整', desc: '核心字段缺失或描述过短无法分类', color: '#d92d20' }
+  collaboration_placeholder: { label: '📄 协作占位', desc: '组课文档等多人协作中间产物，非真实问题工单', color: '#2563EB' },
+  test_data: { label: '🧪 测试数据', desc: '测试或调试用占位数据', color: '#D97706' },
+  blank: { label: '📭 空白/无效', desc: '描述为空或仅为占位符（如"-""/""无"）', color: '#94A3B8' },
+  incomplete: { label: '⚠️ 信息不完整', desc: '核心字段缺失或描述过短无法分类', color: '#F43F5E' }
 };
 
 function InvalidGroup({ type, workorders, counts }) {
@@ -23,19 +23,20 @@ function InvalidGroup({ type, workorders, counts }) {
           alignItems: 'center',
           gap: 10,
           padding: '10px 14px',
-          background: '#f8fafc',
+          background: 'rgba(248,250,252,0.6)',
+          backdropFilter: 'blur(8px)',
           borderRadius: 10,
           cursor: 'pointer',
           borderLeft: `3px solid ${info.color}`
         }}
       >
         <span style={{ fontSize: 18 }}>{collapsed ? '▶' : '▼'}</span>
-        <span style={{ fontWeight: 600, fontSize: 14, color: '#172033', flex: 1 }}>{info.label}</span>
+        <span style={{ fontWeight: 600, fontSize: 14, color: '#0F172A', flex: 1 }}>{info.label}</span>
         <span className="count-badge">{count} 条</span>
       </div>
       {!collapsed && (
         <div style={{ padding: '8px 14px 0' }}>
-          <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 8px' }}>{info.desc}</p>
+          <p style={{ fontSize: 12, color: '#64748B', margin: '0 0 8px' }}>{info.desc}</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {workorders.filter((w) => w.invalidType === type).slice(0, 20).map((w) => (
               <div
@@ -43,18 +44,18 @@ function InvalidGroup({ type, workorders, counts }) {
                 style={{
                   fontSize: 13,
                   padding: '8px 12px',
-                  background: '#fff',
+                  background: 'rgba(255,255,255,0.6)',
                   borderRadius: 6,
-                  border: '1px solid rgba(126,146,176,0.12)',
+                  border: '1px solid rgba(148,163,184,0.1)',
                   display: 'flex',
                   justifyContent: 'space-between',
                   gap: 12
                 }}
               >
                 <span style={{ color: '#475467', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {w.description || <em style={{ color: '#94a3b8' }}>无描述</em>}
+                  {w.description || <em style={{ color: '#94A3B8' }}>无描述</em>}
                 </span>
-                <span style={{ color: '#94a3b8', whiteSpace: 'nowrap', fontSize: 11 }}>
+                <span style={{ color: '#94A3B8', whiteSpace: 'nowrap', fontSize: 11 }}>
                   {w.type || '-'} · {w.grade || '-'} {w.week || ''}
                 </span>
               </div>
