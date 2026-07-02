@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getFeishuStatus, getHealth, getSources, getStats, getWorkorders, syncFeishu } from '../api/workorders.js';
+import AutoScrollWorkorders from '../components/AutoScrollWorkorders.jsx';
 import Charts from '../components/Charts.jsx';
 import ClassificationPanel from '../components/ClassificationPanel.jsx';
 import DataSourceBar from '../components/DataSourceBar.jsx';
@@ -8,6 +9,7 @@ import RightDataPanel from '../components/RightDataPanel.jsx';
 import StatsCards from '../components/StatsCards.jsx';
 import TimeAnalysis from '../components/TimeAnalysis.jsx';
 import UploadExcel from '../components/UploadExcel.jsx';
+import WorkorderDetailModal from '../components/WorkorderDetailModal.jsx';
 import { downloadReviewReport } from '../utils/report.js';
 
 const emptyStats = {
@@ -72,6 +74,9 @@ export default function Dashboard() {
   const [filterState, setFilterState] = useState(defaultFilterState);
   const [bottomExpanded, setBottomExpanded] = useState(false);
   const [showClassificationPanel, setShowClassificationPanel] = useState(false);
+
+  // Detail modal state
+  const [detailWorkorder, setDetailWorkorder] = useState(null);
 
   async function loadDashboardData(nextSourceId = sourceId) {
     if (!nextSourceId) return;
@@ -183,6 +188,24 @@ export default function Dashboard() {
     return workorders.filter((w) => !w.isValidForAnalysis);
   }, [workorders]);
 
+  // Compute focus workorders for auto-scroll
+  const focusWorkorders = useMemo(() => {
+    const seen = new Set();
+    const valid = workorders.filter((w) => w.isValidForAnalysis);
+    return valid
+      .filter((w) => w.isRepeatedAdjustmentCandidate || w.isUnclearRequirement || w.riskLevel === '高' || w.status !== '完成归档')
+      .filter((w) => {
+        if (seen.has(w.id)) return false;
+        seen.add(w.id);
+        return true;
+      })
+      .sort((a, b) => {
+        const riskScore = { '高': 3, '中': 2, '低': 1 };
+        const score = (item) => (item.isRepeatedAdjustmentCandidate ? 40 : 0) + (riskScore[item.riskLevel] || 0) * 10 + (item.isUnclearRequirement ? 20 : 0) + (item.status !== '完成归档' ? 10 : 0);
+        return score(b) - score(a);
+      });
+  }, [workorders]);
+
   function handleToggleUrgent(id, isUrgent) {
     setWorkorders((prev) =>
       prev.map((w) => (w.id === id ? { ...w, isUrgent } : w))
@@ -264,6 +287,14 @@ export default function Dashboard() {
         />
       </div>
 
+      {/* Auto-scroll Focus Workorders */}
+      <AutoScrollWorkorders
+        workorders={focusWorkorders}
+        onCardClick={setDetailWorkorder}
+        autoPlay={true}
+        maxItems={20}
+      />
+
       {/* Bottom Collapsible: Charts & Time Analysis */}
       <div className="bottom-collapsible">
         <button
@@ -291,6 +322,14 @@ export default function Dashboard() {
           stats={stats}
           onClose={() => setShowClassificationPanel(false)}
           onReanalyzed={handleReanalyzed}
+        />
+      )}
+
+      {/* Detail Modal */}
+      {detailWorkorder && (
+        <WorkorderDetailModal
+          workorder={detailWorkorder}
+          onClose={() => setDetailWorkorder(null)}
         />
       )}
     </main>

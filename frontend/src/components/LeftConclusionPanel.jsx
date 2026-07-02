@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
+import CarouselSection from './CarouselSection.jsx';
 import { statusColors } from './charts/chartTheme.js';
-
-const risOrder = ['highRiskCases', 'unclearCases', 'repeatedAdjustmentCases'];
 
 function getExampleText(item) {
   const example = item.examples?.[0];
@@ -114,87 +113,104 @@ export default function LeftConclusionPanel({ stats, onFilterChange, activeFilte
         </div>
       </section>
 
-      {/* High-Frequency Error Top 5 */}
-      <section className="conclusion-section">
-        <div className="section-title">🔴 高频出错内容 Top5</div>
-        {stats.classificationWarning && (
-          <div className="warning-note" style={{ fontSize: 12, padding: '6px 10px', marginBottom: 8 }}>{stats.classificationWarning}</div>
-        )}
-        {errorTop5.length ? errorTop5.map((item, index) => {
+      {/* High-Frequency Error Top 5 — Carousel */}
+      {stats.classificationWarning && (
+        <div className="warning-note" style={{ fontSize: 12, padding: '6px 10px', marginBottom: 4 }}>{stats.classificationWarning}</div>
+      )}
+
+      <CarouselSection
+        title="🔴 高频出错内容 Top5"
+        subtitle="按「所属类型 + 问题一级分类 + 问题关键词」聚合"
+        items={errorTop5}
+        autoPlay={errorTop5.length > 2}
+        interval={3500}
+        visibleCount={1}
+        cardGap={16}
+        pauseOnHover={true}
+        loop={true}
+        renderItem={(item, index) => {
           const isActive = activeSection === 'error' && activeItemKey === item.name;
           return (
             <div
-              key={item.name}
-              className={`conclusion-item ${isActive ? 'active' : ''}`}
+              className={`carousel-error-card ${isActive ? 'active-card' : ''}`}
               onClick={() => handleClick('error', item)}
             >
-              <span className="rank-index">{index + 1}</span>
-              <div className="item-info">
-                <div className="item-name">{item.name}</div>
-                <div className="item-detail">{formatList(item.grades)} · {formatList(item.weeks)}</div>
+              <span className="card-rank">TOP {index + 1}</span>
+              <span className="card-title">{item.name}</span>
+              <div className="card-stats">
+                <span className="card-count">{item.count}</span>
+                <span className="card-percent">条 / 占比 {item.percent}%</span>
               </div>
-              <span className="item-count">{item.count} 条</span>
-              <span className="item-arrow">→</span>
+              <div className="card-meta">
+                <span>涉及：{formatList(item.grades)}</span>
+                <span>高发周次：{formatList(item.weeks)}</span>
+              </div>
+              <div className="card-example">代表案例：{getExampleText(item)}</div>
             </div>
           );
-        }) : <div className="empty-state small-empty" style={{ padding: 16, fontSize: 13 }}>暂无高频出错内容</div>}
-      </section>
+        }}
+      />
 
-      {/* Unclear Requirement & Rework */}
-      <section className="conclusion-section">
-        <div className="section-title">🟡 需求不明确与反复调整</div>
-
-        {unclearTop3.length > 0 && (
-          <>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>需求不明确原因 Top3</div>
-            {unclearTop3.map((item, index) => {
+      {/* Unclear Requirement & Rework — Lightweight Carousel */}
+      {(unclearTop3.length > 0 || reworkTop.length > 0) && (
+        <CarouselSection
+          title="🟡 需求不明确与反复调整"
+          subtitle="最容易造成沟通成本和返工风险的工单类型"
+          items={[...unclearTop3.map((item) => ({ ...item, cardType: 'unclear' })), ...reworkTop.map((item) => ({ ...item, cardType: 'rework' }))]}
+          autoPlay={[...unclearTop3, ...reworkTop].length > 3}
+          interval={5000}
+          visibleCount={1}
+          cardGap={16}
+          pauseOnHover={true}
+          loop={true}
+          renderItem={(item) => {
+            if (item.cardType === 'unclear') {
               const isActive = activeSection === 'unclear' && activeItemKey === (item.reason || item.name);
               return (
                 <div
-                  key={item.reason || item.name}
-                  className={`conclusion-item ${isActive ? 'active' : ''}`}
+                  className={`carousel-error-card ${isActive ? 'active-card' : ''}`}
                   onClick={() => handleUnclearReasonClick(item)}
+                  style={{ minHeight: 140 }}
                 >
-                  <span className="rank-index">{index + 1}</span>
-                  <div className="item-info">
-                    <div className="item-name">{item.reason || item.name}</div>
+                  <span className="card-rank" style={{ fontSize: 16 }}>不明确</span>
+                  <span className="card-title">{item.reason || item.name}</span>
+                  <div className="card-stats">
+                    <span className="card-count">{item.count}</span>
+                    <span className="card-percent">条 / 占比 {item.percent}%</span>
                   </div>
-                  <span className="item-count">{item.count} 条</span>
-                  <span className="item-arrow">→</span>
+                  <div className="card-meta">
+                    <span>关键词：{item.examples?.flatMap((e) => e.issueKeywords || []).slice(0, 5).join('、') || '暂无'}</span>
+                  </div>
                 </div>
               );
-            })}
-          </>
-        )}
-
-        {reworkTop.length > 0 && (
-          <>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 6, marginTop: 10 }}>反复修改 Top3</div>
-            {reworkTop.map((item, index) => {
-              const isActive = activeSection === 'rework' && activeItemKey === item.name;
-              return (
-                <div
-                  key={item.name}
-                  className={`conclusion-item ${isActive ? 'active' : ''}`}
-                  onClick={() => handleClick('rework', item)}
-                >
-                  <span className="rank-index" style={index === 0 ? { background: '#fee4e2', color: '#b42318' } : {}}>{index + 1}</span>
-                  <div className="item-info">
-                    <div className="item-name">{item.name}</div>
-                    <div className="item-detail">{getExampleText(item)}</div>
-                  </div>
-                  <span className="item-count">{item.count} 条</span>
-                  <span className="item-arrow">→</span>
+            }
+            const isActive = activeSection === 'rework' && activeItemKey === item.name;
+            return (
+              <div
+                className={`carousel-error-card ${isActive ? 'active-card' : ''}`}
+                onClick={() => handleClick('rework', item)}
+                style={{ minHeight: 140, borderColor: 'rgba(217,45,32,0.2)' }}
+              >
+                <span className="card-rank" style={{ fontSize: 16, background: 'linear-gradient(135deg, #d92d20, #f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>反复调整</span>
+                <span className="card-title">{item.name}</span>
+                <div className="card-stats">
+                  <span className="card-count" style={{ color: '#d92d20' }}>{item.count}</span>
+                  <span className="card-percent">条 / 占比 {item.percent}%</span>
                 </div>
-              );
-            })}
-          </>
-        )}
+                <div className="card-example">代表案例：{getExampleText(item)}</div>
+              </div>
+            );
+          }}
+        />
+      )}
 
-        {unclearTop3.length === 0 && reworkTop.length === 0 && (
-          <div className="empty-state small-empty" style={{ padding: 16, fontSize: 13 }}>暂无需求不明确或反复调整数据</div>
-        )}
-      </section>
+      {/* Fallback if no data */}
+      {errorTop5.length === 0 && unclearTop3.length === 0 && reworkTop.length === 0 && (
+        <section className="conclusion-section">
+          <div className="section-title">🔴 高频出错内容 Top5</div>
+          <div className="empty-state small-empty" style={{ padding: 16, fontSize: 13 }}>暂无高频出错内容</div>
+        </section>
+      )}
 
       {/* Rework Root Causes Summary */}
       {reworkCauses.length > 0 && (
