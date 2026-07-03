@@ -105,3 +105,36 @@ export function toggleUrgent(id, isUrgent) {
 export function getPassRate(sourceId) {
   return request(withSource('/workorders/pass-rate', sourceId));
 }
+
+// ── 生产指挥舱 API ──
+
+export function getCommandOverview(sourceId) {
+  return request(withSource('/command-center/overview', sourceId));
+}
+
+export function getCommandDiagnostics(sourceId) {
+  return request(withSource('/command-center/diagnostics', sourceId));
+}
+
+export function getCommandTasklist(sourceId, filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.grade) params.set('grade', filters.grade);
+  if (filters.week) params.set('week', filters.week);
+  if (filters.status) params.set('status', filters.status);
+  if (filters.researcher) params.set('researcher', filters.researcher);
+  if (filters.onlyUnclosed) params.set('onlyUnclosed', 'true');
+  const qs = params.toString();
+  return request(withSource(`/command-center/tasklist${qs ? '?' + qs : ''}`, sourceId));
+}
+
+export function getCommandForecast(sourceId) {
+  return request(withSource('/command-center/forecast', sourceId));
+}
+
+export function getCommandBhi(sourceId) {
+  return request(withSource('/command-center/bhi', sourceId));
+}
+
+export function getCommandAll(sourceId) {
+  return request(withSource('/command-center/all', sourceId));
+}

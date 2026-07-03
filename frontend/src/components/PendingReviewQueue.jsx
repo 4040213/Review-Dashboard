@@ -82,8 +82,9 @@ export default function PendingReviewQueue({ data, onToggleUrgent }) {
         ))}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {sorted.map((item, index) => {
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingRight: 4 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {sorted.map((item, index) => {
           const waitDays = daysBetween(item.updatedAt || item.submittedAt);
           const isOverdue = waitDays !== null && waitDays >= 7;
           const isUrgent = item.isUrgent;
@@ -126,10 +127,10 @@ export default function PendingReviewQueue({ data, onToggleUrgent }) {
                 <p style={{ margin: 0, fontSize: 14, color: '#0F172A', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {item.description || '未填写问题描述'}
                 </p>
-                <div style={{ fontSize: 12, color: '#64748B', marginTop: 4, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                  <span>负责人：{item.owner || '-'}</span>
-                  <span>提交：{item.submittedAt ? new Date(item.submittedAt).toLocaleDateString('zh-CN') : '-'}</span>
-                  <span>更新：{item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('zh-CN') : '-'}</span>
+                <div style={{ fontSize: 12, color: '#64748B', marginTop: 4, display: 'flex', gap: 16, flexWrap: 'wrap', minWidth: 0 }}>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>负责人：{item.owner || '-'}</span>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>提交：{item.submittedAt ? new Date(item.submittedAt).toLocaleDateString('zh-CN') : '-'}</span>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>更新：{item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('zh-CN') : '-'}</span>
                 </div>
               </div>
 
@@ -177,6 +178,7 @@ export default function PendingReviewQueue({ data, onToggleUrgent }) {
             </article>
           );
         })}
+        </div>
       </div>
     </div>
   );

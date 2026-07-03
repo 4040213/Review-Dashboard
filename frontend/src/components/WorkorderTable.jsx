@@ -5,22 +5,33 @@ function joinValues(values) {
   return values?.length ? values.join('、') : '-';
 }
 
+// Column width presets (in px)
+const W = {
+  narrow: 80,    // tags, short labels
+  medium: 110,   // status, grade, week
+  wide: 150,     // owner, dates, keywords
+  extra: 200,    // reasons, longer text
+  desc: 300      // description
+};
+
 const baseColumns = [
   {
     accessorKey: 'isValidForAnalysis',
     header: '是否有效分析',
+    size: W.narrow,
     cell: ({ getValue }) => (getValue() ? <span className="tag ok-tag">有效</span> : <span className="tag muted-tag">无效</span>)
   },
-  { accessorKey: 'riskLevel', header: '风险等级', cell: ({ getValue }) => <span className={`risk-tag risk-${getValue()}`}>{getValue() || '-'}</span> },
-  { accessorKey: 'status', header: '状态' },
-  { accessorKey: 'statusGroup', header: '状态分组' },
-  { accessorKey: 'coursePosition', header: '课程定位' },
-  { accessorKey: 'grade', header: '年级' },
-  { accessorKey: 'week', header: '周' },
-  { accessorKey: 'type', header: '所属类型' },
+  { accessorKey: 'riskLevel', header: '风险等级', size: W.narrow, cell: ({ getValue }) => <span className={`risk-tag risk-${getValue()}`}>{getValue() || '-'}</span> },
+  { accessorKey: 'status', header: '状态', size: W.medium },
+  { accessorKey: 'statusGroup', header: '状态分组', size: W.medium },
+  { accessorKey: 'coursePosition', header: '课程定位', size: W.medium },
+  { accessorKey: 'grade', header: '年级', size: 70 },
+  { accessorKey: 'week', header: '周', size: 70 },
+  { accessorKey: 'type', header: '所属类型', size: W.medium },
   {
     accessorKey: 'issueCategory',
     header: '问题一级分类',
+    size: W.wide,
     cell: ({ row }) => (
       <span className="classification-reason">
         {row.original.issueCategory || '其他'}
@@ -36,23 +47,24 @@ const baseColumns = [
       </span>
     )
   },
-  { accessorKey: 'issueKeywords', header: '问题关键词', cell: ({ getValue }) => joinValues(getValue()) },
-  { accessorKey: 'isUnclearRequirement', header: '是否需求不明确', cell: ({ getValue }) => (getValue() ? <span className="tag warning">是</span> : <span className="tag muted-tag">否</span>) },
-  { accessorKey: 'unclearReasons', header: '不明确原因', cell: ({ getValue }) => joinValues(getValue()) },
-  { accessorKey: 'isRepeatedAdjustmentCandidate', header: '是否反复调整候选', cell: ({ getValue }) => (getValue() ? <span className="tag danger">是</span> : <span className="tag muted-tag">否</span>) },
-  { accessorKey: 'owner', header: '负责人' },
-  { accessorKey: 'updatedAt', header: '最后更新时间' },
-  { accessorKey: 'submittedAt', header: '工单提出时间' },
-  { accessorKey: 'resolvedAt', header: '工单解决时间' },
-  { accessorKey: 'acceptedAt', header: '工单验收时间' },
-  { accessorKey: 'archivedAt', header: '工单归档时间' },
-  { accessorKey: 'invalidReasons', header: '无效原因', cell: ({ getValue }) => joinValues(getValue()) },
-  { accessorKey: 'description', header: '问题描述', cell: ({ getValue }) => <span className="description-cell">{getValue() || '-'}</span> }
+  { accessorKey: 'issueKeywords', header: '问题关键词', size: W.wide, cell: ({ getValue }) => joinValues(getValue()) },
+  { accessorKey: 'isUnclearRequirement', header: '是否需求不明确', size: W.narrow, cell: ({ getValue }) => (getValue() ? <span className="tag warning">是</span> : <span className="tag muted-tag">否</span>) },
+  { accessorKey: 'unclearReasons', header: '不明确原因', size: W.extra, cell: ({ getValue }) => joinValues(getValue()) },
+  { accessorKey: 'isRepeatedAdjustmentCandidate', header: '是否反复调整候选', size: 100, cell: ({ getValue }) => (getValue() ? <span className="tag danger">是</span> : <span className="tag muted-tag">否</span>) },
+  { accessorKey: 'owner', header: '负责人', size: W.medium },
+  { accessorKey: 'updatedAt', header: '最后更新时间', size: W.wide },
+  { accessorKey: 'submittedAt', header: '工单提出时间', size: W.wide },
+  { accessorKey: 'resolvedAt', header: '工单解决时间', size: W.wide },
+  { accessorKey: 'acceptedAt', header: '工单验收时间', size: W.wide },
+  { accessorKey: 'archivedAt', header: '工单归档时间', size: W.wide },
+  { accessorKey: 'invalidReasons', header: '无效原因', size: W.extra, cell: ({ getValue }) => joinValues(getValue()) },
+  { accessorKey: 'description', header: '问题描述', size: W.desc, cell: ({ getValue }) => <span className="description-cell">{getValue() || '-'}</span> }
 ];
 
 const invalidTypeColumn = {
   accessorKey: 'invalidType',
   header: '无效类型',
+  size: 110,
   cell: ({ getValue }) => {
     const type = getValue();
     const labels = {
@@ -113,7 +125,6 @@ export default function WorkorderTable({ workorders, activeFilter, showInvalidTy
     const next = { ...defaultFilters };
     switch (activeFilter.type) {
       case 'errorContent':
-        // Filter by matching issueCategory + keywords
         next.issueCategory = activeFilter.value;
         break;
       case 'unclearReason':
@@ -130,7 +141,6 @@ export default function WorkorderTable({ workorders, activeFilter, showInvalidTy
         break;
       case 'isRepeatedAdjustment':
         next.keyword = '';
-        // Repeated adjustment isn't directly filterable in old filters
         break;
       case 'scope':
         if (activeFilter.value === 'valid') next.isValidForAnalysis = 'true';
@@ -173,7 +183,6 @@ export default function WorkorderTable({ workorders, activeFilter, showInvalidTy
     });
   }, [filters, workorders]);
 
-  // Compute highlighted row IDs from activeFilter keywords
   const highlightedIds = useMemo(() => {
     if (!activeFilter?.keywords?.length) return new Set();
     const lowerKeywords = activeFilter.keywords.map((k) => String(k).toLowerCase());
@@ -184,17 +193,22 @@ export default function WorkorderTable({ workorders, activeFilter, showInvalidTy
     );
   }, [activeFilter?.keywords, workorders]);
 
-  // Build columns with optional invalidType
   const columns = useMemo(() => {
     if (showInvalidType) {
       const cols = [...baseColumns];
-      cols.splice(1, 0, invalidTypeColumn); // Insert after isValidForAnalysis
+      cols.splice(1, 0, invalidTypeColumn);
       return cols;
     }
     return baseColumns;
   }, [showInvalidType]);
 
   const table = useReactTable({ data: filteredWorkorders, columns, getCoreRowModel: getCoreRowModel() });
+
+  // Columns whose cells need overflow:visible for popovers
+  const passthroughColumns = new Set(['issueCategory']);
+
+  // Columns that should allow multi-line wrapping (overrides nowrap)
+  const wrapColumns = new Set(['description']);
 
   function updateFilter(key, value) {
     setFilters((current) => ({ ...current, [key]: value }));
@@ -209,6 +223,9 @@ export default function WorkorderTable({ workorders, activeFilter, showInvalidTy
     return classes.join(' ');
   }
 
+  // Compute total table width
+  const totalWidth = columns.reduce((sum, col) => sum + (col.size || W.medium), 0);
+
   return (
     <section className="panel table-panel" style={{ marginTop: 12 }}>
       <div className="section-heading">
@@ -220,7 +237,6 @@ export default function WorkorderTable({ workorders, activeFilter, showInvalidTy
         <span className="count-badge">{filteredWorkorders.length} / {workorders.length} 条</span>
       </div>
 
-      {/* Inline filters — kept for standalone use, hidden when FilterToolbar is active */}
       <div className="filters-grid" style={showInvalidType !== undefined ? { display: 'none' } : {}}>
         <FilterSelect label="是否有效分析" value={filters.isValidForAnalysis} options={[{ value: 'true', label: '有效工单' }, { value: 'false', label: '无效工单' }]} onChange={(value) => updateFilter('isValidForAnalysis', value)} />
         <FilterSelect label="无效原因" value={filters.invalidReason} options={filterOptions.invalidReason} onChange={(value) => updateFilter('invalidReason', value)} />
@@ -238,11 +254,49 @@ export default function WorkorderTable({ workorders, activeFilter, showInvalidTy
       </div>
 
       <div className="table-scroll">
-        <table>
-          <thead>{table.getHeaderGroups().map((headerGroup) => <tr key={headerGroup.id}>{headerGroup.headers.map((header) => <th key={header.id}>{header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}</th>)}</tr>)}</thead>
-          <tbody>{table.getRowModel().rows.map((row) => <tr className={getRowClassName(row.original)} key={row.id}>{row.getVisibleCells().map((cell) => <td key={cell.id} title={String(cell.getValue() ?? '')}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>)}</tr>)}</tbody>
+        <table style={{ minWidth: totalWidth, tableLayout: 'fixed' }}>
+          <thead>{table.getHeaderGroups().map((headerGroup) => (
+            <tr key={headerGroup.id}>
+              {headerGroup.headers.map((header) => {
+                const colSize = header.column.columnDef.size || W.medium;
+                return (
+                  <th key={header.id} style={{ width: colSize, minWidth: colSize }}>
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  </th>
+                );
+              })}
+            </tr>
+          ))}</thead>
+          <tbody>{table.getRowModel().rows.map((row) => (
+            <tr className={getRowClassName(row.original)} key={row.id}>
+              {row.getVisibleCells().map((cell) => {
+                const colId = cell.column.id;
+                const colSize = cell.column.columnDef.size || W.medium;
+                const isPassthrough = passthroughColumns.has(colId);
+                const isWrap = wrapColumns.has(colId);
+                const rawValue = String(cell.getValue() ?? '');
+
+                return (
+                  <td
+                    key={cell.id}
+                    className={isPassthrough ? 'cell-passthrough' : ''}
+                    style={{ width: colSize, minWidth: colSize }}
+                    title={!isPassthrough && !isWrap ? rawValue : undefined}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}</tbody>
         </table>
-        {filteredWorkorders.length === 0 && <div className="empty-state">暂无匹配工单数据。</div>}
+        {filteredWorkorders.length === 0 && (
+          <div className="empty-state">
+            {workorders.length === 0
+              ? '暂无工单数据。请先上传 Excel 文件（需包含「工单任务」工作表），或从飞书同步。'
+              : '当前筛选条件下无匹配工单，请调整上方筛选条件或切换数据范围。'}
+          </div>
+        )}
       </div>
     </section>
   );

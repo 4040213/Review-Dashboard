@@ -74,7 +74,9 @@ export default function RightDataPanel({
           </button>
         ))}
       </div>
-      {renderTabContent()}
+      <div className="right-panel-content">
+        {renderTabContent()}
+      </div>
     </div>
   );
 }

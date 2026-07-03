@@ -98,18 +98,20 @@ export default function InvalidList({ data, workorders }) {
         </div>
       </div>
 
-      {Object.keys(INVALID_TYPE_LABELS).map((type) => (
-        <InvalidGroup key={type} type={type} workorders={invalidItems} counts={counts} />
-      ))}
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingRight: 4 }}>
+        {Object.keys(INVALID_TYPE_LABELS).map((type) => (
+          <InvalidGroup key={type} type={type} workorders={invalidItems} counts={counts} />
+        ))}
 
-      {/* Fallback for items without a typed invalidType */}
-      {invalidItems.filter((w) => !INVALID_TYPE_LABELS[w.invalidType]).length > 0 && (
-        <InvalidGroup
-          type="incomplete"
-          workorders={invalidItems}
-          counts={{ incomplete: invalidItems.filter((w) => !INVALID_TYPE_LABELS[w.invalidType]).length }}
-        />
-      )}
+        {/* Fallback for items without a typed invalidType */}
+        {invalidItems.filter((w) => !INVALID_TYPE_LABELS[w.invalidType]).length > 0 && (
+          <InvalidGroup
+            type="incomplete"
+            workorders={invalidItems}
+            counts={{ incomplete: invalidItems.filter((w) => !INVALID_TYPE_LABELS[w.invalidType]).length }}
+          />
+        )}
+      </div>
     </div>
   );
 }

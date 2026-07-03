@@ -90,69 +90,83 @@ export async function initDatabase() {
   return db;
 }
 
+// Map workorder fields to database column values
+function mapWorkorderToRow(item, source) {
+  return {
+    id: item.id,
+    sourceId: item.sourceId || source.id,
+    sourceName: item.sourceName || source.name,
+    sourceRecordId: item.sourceRecordId || item.id,
+    coursePosition: item.coursePosition ?? '',
+    grade: item.grade ?? '',
+    week: item.week ?? '',
+    type: item.type ?? '',
+    description: item.description ?? '',
+    status: item.status ?? '',
+    statusGroup: item.statusGroup ?? '',
+    reporter: item.reporter ?? '',
+    updatedAt: item.updatedAt ?? null,
+    submittedAt: item.submittedAt ?? null,
+    resolvedAt: item.resolvedAt ?? null,
+    acceptedAt: item.acceptedAt ?? null,
+    archivedAt: item.archivedAt ?? null,
+    owner: item.owner ?? '',
+    researcher: item.researcher ?? '',
+    issueCategory: item.issueCategory ?? '',
+    issueKeywords: JSON.stringify(item.issueKeywords ?? []),
+    isUnclearRequirement: item.isUnclearRequirement ? 1 : 0,
+    unclearReasons: JSON.stringify(item.unclearReasons ?? []),
+    riskLevel: item.riskLevel ?? '',
+    riskReasons: JSON.stringify(item.riskReasons ?? []),
+    isRepeatedAdjustmentCandidate: item.isRepeatedAdjustmentCandidate ? 1 : 0,
+    repeatedAdjustmentReasons: JSON.stringify(item.repeatedAdjustmentReasons ?? []),
+    suggestions: JSON.stringify(item.suggestions ?? []),
+    isValidForAnalysis: item.isValidForAnalysis ? 1 : 0,
+    invalidReasons: JSON.stringify(item.invalidReasons ?? []),
+    invalidType: item.invalidType || null,
+    reworkRootCause: item.reworkRootCause || null,
+    reworkRootCauseReason: item.reworkRootCauseReason || null,
+    passCount: item.passCount || 0,
+    rejectCount: item.rejectCount || 0,
+    isUrgent: item.isUrgent ? 1 : 0
+  };
+}
+
 export async function replaceWorkorders(workorders, source = getDataSource(defaultSourceId)) {
   await initDatabase();
+
+  // Read actual table columns from the database
+  const tableInfo = db.exec('PRAGMA table_info(workorders)');
+  const tableColumns = tableInfo[0]?.values?.map((row) => row[1]) || [];
+  if (tableColumns.length === 0) {
+    throw new Error('workorders 表不存在或没有列');
+  }
+
+  // Exclude auto-generated columns that we don't insert
+  const insertColumns = tableColumns.filter((col) => col !== 'createdAt');
+  const placeholders = insertColumns.map(() => '?').join(', ');
+  const sql = `INSERT INTO workorders (${insertColumns.join(', ')}) VALUES (${placeholders})`;
+
+  console.log(`[database] Inserting into ${insertColumns.length} columns: ${insertColumns.join(', ')}`);
+
   db.run('BEGIN TRANSACTION');
   try {
     db.run('DELETE FROM workorders WHERE COALESCE(sourceId, ?) = ?', [source.id, source.id]);
-    const stmt = db.prepare(`
-      INSERT INTO workorders (
-        id, sourceId, sourceName, sourceRecordId, coursePosition, grade, week, type,
-        description, status, statusGroup, reporter, updatedAt, submittedAt, resolvedAt,
-        acceptedAt, archivedAt, owner, researcher, issueCategory, issueKeywords,
-        isUnclearRequirement, unclearReasons, riskLevel, riskReasons,
-        isRepeatedAdjustmentCandidate, repeatedAdjustmentReasons, suggestions,
-        isValidForAnalysis, invalidReasons, invalidType, reworkRootCause,
-        reworkRootCauseReason, passCount, rejectCount, isUrgent
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
 
+    const stmt = db.prepare(sql);
     workorders.forEach((item) => {
-      stmt.run([
-        item.id,
-        item.sourceId || source.id,
-        item.sourceName || source.name,
-        item.sourceRecordId || item.id,
-        item.coursePosition,
-        item.grade,
-        item.week,
-        item.type,
-        item.description,
-        item.status,
-        item.statusGroup,
-        item.reporter,
-        item.updatedAt,
-        item.submittedAt,
-        item.resolvedAt,
-        item.acceptedAt,
-        item.archivedAt,
-        item.owner,
-        item.researcher,
-        item.issueCategory,
-        JSON.stringify(item.issueKeywords ?? []),
-        item.isUnclearRequirement ? 1 : 0,
-        JSON.stringify(item.unclearReasons ?? []),
-        item.riskLevel,
-        JSON.stringify(item.riskReasons ?? []),
-        item.isRepeatedAdjustmentCandidate ? 1 : 0,
-        JSON.stringify(item.repeatedAdjustmentReasons ?? []),
-        JSON.stringify(item.suggestions ?? []),
-        item.isValidForAnalysis ? 1 : 0,
-        JSON.stringify(item.invalidReasons ?? []),
-        item.invalidType || null,
-        item.reworkRootCause || null,
-        item.reworkRootCauseReason || null,
-        item.passCount || 0,
-        item.rejectCount || 0,
-        item.isUrgent ? 1 : 0
-      ]);
+      const row = mapWorkorderToRow(item, source);
+      const values = insertColumns.map((col) => (row[col] !== undefined ? row[col] : null));
+      stmt.run(values);
     });
 
     stmt.free();
     db.run('COMMIT');
     saveDatabase();
+    console.log(`[database] Saved ${workorders.length} workorders`);
   } catch (error) {
     db.run('ROLLBACK');
+    console.error(`[database] Replace failed: ${error.message}`);
     throw error;
   }
 }

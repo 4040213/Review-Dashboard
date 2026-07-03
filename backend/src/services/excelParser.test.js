@@ -45,13 +45,15 @@ test('parseWorkorderExcel maps Feishu exported option-style headers', () => {
   assert.equal(result.researcher, '王五');
 });
 
-test('parseWorkorderExcel throws when target sheet is missing', () => {
+test('parseWorkorderExcel falls back to first sheet when target sheet is missing', () => {
   const workbook = xlsx.utils.book_new();
   const sheet = xlsx.utils.json_to_sheet([{ name: '测试' }]);
   xlsx.utils.book_append_sheet(workbook, sheet, '其他');
   const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 
-  assert.throws(() => parseWorkorderExcel(buffer), /未找到名为「工单任务」的 sheet/);
+  // Should not throw — falls back to first available sheet
+  const rows = parseWorkorderExcel(buffer);
+  assert.ok(rows.length === 1);
 });
 
 test('parseWorkorderExcel can parse provided sample Excel file', { skip: !fs.existsSync(sampleExcelPath) }, () => {

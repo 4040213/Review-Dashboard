@@ -5,6 +5,7 @@ import workordersRouter from './routes/workorders.js';
 import statsRouter from './routes/stats.js';
 import feishuRouter from './routes/feishu.js';
 import classificationRouter from './routes/classification.js';
+import commandCenterRouter from './routes/commandCenter.js';
 import { initDatabase } from './db/database.js';
 
 const app = express();
@@ -24,6 +25,7 @@ app.use('/api/workorders', workordersRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/feishu', feishuRouter);
 app.use('/api/classification-rules', classificationRouter);
+app.use('/api/command-center', commandCenterRouter);
 
 app.use((err, _req, res, _next) => {
   console.error(err);

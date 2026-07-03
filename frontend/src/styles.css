@@ -388,6 +388,8 @@ button:disabled {
   align-items: stretch;
 }
 
+/* Left conclusion panel: stretches to match the right panel height,
+   but internal cards keep their natural height (no flex:1 stretching). */
 .left-conclusion-panel {
   flex: 0 0 38%;
   min-width: 340px;
@@ -397,40 +399,55 @@ button:disabled {
   gap: 14px;
 }
 
+/* Right data panel: fills remaining split height, content area scrolls
+   when there is more content than fits. */
 .right-data-panel {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  min-height: 100%;
+  gap: 0;
+  min-height: 0;
 }
 
-/* Ensure panels inside right panel fill available height */
-.right-data-panel > .panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.right-data-panel > .panel > .section-heading,
-.right-data-panel > .panel > .tab-bar,
-.right-data-panel > .panel > .filter-toolbar {
+.right-data-panel > .tab-bar {
   flex-shrink: 0;
 }
 
-.right-data-panel > .panel > .table-scroll {
+.right-panel-content {
   flex: 1 1 0;
   min-height: 0;
-  overflow: auto;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
-.right-data-panel > .panel > .empty-state {
+/* When a standalone .panel is rendered inside the right content area,
+   make it fill the available height so its table-scroll can scroll. */
+.right-panel-content > .panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  margin-top: 0 !important;
+}
+
+.right-panel-content > .panel > .section-heading,
+.right-panel-content > .panel > .filters-grid,
+.right-panel-content > .panel > .filter-toolbar {
+  flex-shrink: 0;
+}
+
+.right-panel-content > .panel > .table-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.right-panel-content > .panel > .empty-state {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 180px;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -803,10 +820,10 @@ button:disabled {
 
 table {
   width: 100%;
-  min-width: 2400px;
   border-collapse: separate;
   border-spacing: 0;
   background: transparent;
+  table-layout: fixed;
 }
 
 th, td {
@@ -826,12 +843,22 @@ th {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 td {
-  max-width: 280px;
+  overflow: hidden;
   color: var(--text-primary);
   line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+td.cell-passthrough {
+  overflow: visible;
+  white-space: normal;
 }
 
 tbody tr { transition: background var(--transition-fast); }
@@ -861,6 +888,8 @@ tbody tr:hover td {
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  white-space: normal;
+  word-break: break-word;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1013,9 +1042,22 @@ tbody tr:hover td {
 
 .focus-reasons p {
   margin: 6px 0 0;
+  overflow: hidden;
   color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.6;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Ensure focus-grid items don't overflow */
+.focus-grid strong {
+  display: block;
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -2293,5 +2335,483 @@ tbody tr:hover td {
   .auto-scroll-container {
     min-height: 320px !important;
     max-height: calc(100vh - 320px) !important;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   生产指挥舱 (Production Command Center) 样式
+   ═══════════════════════════════════════════ */
+
+/* ── 视图切换按钮 ── */
+.active-view-btn {
+  background: linear-gradient(135deg, #2B5FD7, #3498DB) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 12px rgba(43, 95, 215, 0.3);
+}
+
+/* ── 标签导航 ── */
+.command-tab-bar {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.68);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  padding: 6px;
+  margin-top: 18px;
+  box-shadow: 0 12px 32px rgba(43, 95, 215, 0.06);
+}
+
+.command-tab {
+  flex: 1;
+  padding: 14px 20px;
+  border: none;
+  background: transparent;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #7F8C8D;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.command-tab:hover {
+  background: rgba(43, 95, 215, 0.06);
+  color: #2B5FD7;
+}
+
+.command-tab.active {
+  background: linear-gradient(135deg, #2B5FD7, #3498DB);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(43, 95, 215, 0.3);
+}
+
+.command-tab .tab-icon { font-size: 18px; }
+.command-tab .tab-label { font-size: 14px; }
+
+.tab-badge {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ── 指挥舱内容区 ── */
+.cc-dashboard-content {
+  margin-top: 20px;
+}
+
+.cc-tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── KPI 指标卡 ── */
+.cc-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+
+.cc-kpi-card {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  padding: 20px 22px;
+  box-shadow: 0 8px 24px rgba(43, 95, 215, 0.04);
+  border-left: 4px solid #2B5FD7;
+  transition: all 0.2s ease;
+}
+
+.cc-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(43, 95, 215, 0.08);
+}
+
+.cc-kpi-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #7F8C8D;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cc-kpi-value {
+  display: block;
+  font-size: 36px;
+  font-weight: 800;
+  margin: 8px 0 4px;
+}
+
+.cc-kpi-sub {
+  display: block;
+  font-size: 12px;
+  color: #7F8C8D;
+  font-style: normal;
+}
+
+/* ── 图表行 ── */
+.cc-charts-row {
+  display: grid;
+  gap: 20px;
+}
+
+.cc-charts-row.cc-two-col {
+  grid-template-columns: 1fr 1fr;
+}
+
+.cc-chart-card {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  padding: 18px;
+  box-shadow: 0 8px 24px rgba(43, 95, 215, 0.04);
+}
+
+.cc-chart-card.cc-span-full {
+  grid-column: 1 / -1;
+}
+
+.cc-chart-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #2C3E50;
+  margin: 0 0 8px;
+}
+
+.cc-chart-note {
+  font-size: 12px;
+  color: #7F8C8D;
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* ── BHI 详情 ── */
+.cc-bhi-detail {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding: 10px 0 0;
+  border-top: 1px solid rgba(148, 163, 184, 0.15);
+  margin-top: 4px;
+}
+
+.cc-bhi-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.cc-bhi-item span {
+  font-size: 11px;
+  color: #7F8C8D;
+}
+
+.cc-bhi-item strong {
+  font-size: 16px;
+  color: #2C3E50;
+  font-weight: 700;
+}
+
+/* ── 状态明细 ── */
+.cc-status-detail {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.cc-status-detail-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #7F8C8D;
+  margin-bottom: 6px;
+}
+
+.cc-status-detail-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
+}
+
+.cc-status-detail-item {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.cc-status-detail-item span:first-child {
+  color: #2C3E50;
+  flex: 1;
+}
+
+.cc-status-count {
+  color: #2B5FD7;
+  font-weight: 700;
+}
+
+.cc-status-pct {
+  color: #7F8C8D;
+}
+
+/* ── 负载表格 ── */
+.cc-workload-table {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(148, 163, 184, 0.15);
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.cc-workload-header,
+.cc-workload-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 0.6fr;
+  gap: 8px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.cc-workload-header {
+  font-weight: 700;
+  color: #7F8C8D;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.cc-workload-row {
+  color: #2C3E50;
+}
+
+.cc-workload-row:nth-child(even) {
+  background: rgba(43, 95, 215, 0.03);
+}
+
+/* ── 待办表格 ── */
+.cc-task-filters {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  margin-bottom: 16px;
+}
+
+.cc-filter-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #2C3E50;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.cc-filter-select {
+  padding: 6px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 999px;
+  font-size: 13px;
+  color: #2C3E50;
+  background: #fff;
+  cursor: pointer;
+  min-width: 100px;
+}
+
+.cc-filter-search {
+  padding: 6px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 999px;
+  font-size: 13px;
+  color: #2C3E50;
+  background: #fff;
+  min-width: 160px;
+  flex: 1;
+}
+
+.cc-task-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.cc-task-count {
+  margin-left: auto;
+  font-size: 13px;
+  color: #7F8C8D;
+  font-weight: 600;
+}
+
+.cc-table-scroll {
+  overflow-x: auto;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.cc-task-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.cc-task-table th {
+  background: rgba(43, 95, 215, 0.06);
+  padding: 12px 10px;
+  text-align: left;
+  font-weight: 700;
+  color: #2C3E50;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 2px solid rgba(43, 95, 215, 0.15);
+}
+
+.cc-task-table th:hover {
+  background: rgba(43, 95, 215, 0.1);
+}
+
+.cc-task-table td {
+  padding: 10px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  color: #2C3E50;
+  vertical-align: middle;
+}
+
+.cc-task-table tr:hover td {
+  background: rgba(43, 95, 215, 0.03);
+}
+
+.cc-row-blocking td {
+  background: rgba(231, 76, 60, 0.05) !important;
+}
+
+.cc-row-aging td {
+  background: rgba(245, 166, 35, 0.05) !important;
+}
+
+.cc-desc-cell {
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+}
+
+.cc-type-tag,
+.cc-status-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cc-action-cell {
+  font-size: 11px;
+  color: #7F8C8D;
+  font-style: italic;
+}
+
+/* ── 预测汇总 ── */
+.cc-forecast-summary {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 12px 0 0;
+  border-top: 1px solid rgba(148, 163, 184, 0.15);
+  margin-top: 4px;
+}
+
+.cc-forecast-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.cc-forecast-item span {
+  font-size: 11px;
+  color: #7F8C8D;
+  font-weight: 600;
+}
+
+.cc-forecast-item strong {
+  font-size: 16px;
+  color: #2C3E50;
+  font-weight: 800;
+}
+
+/* ── 刷新信息 ── */
+.cc-refresh-info {
+  text-align: center;
+  padding: 14px;
+  font-size: 12px;
+  color: #7F8C8D;
+  margin-top: 16px;
+}
+
+/* ── 响应式 ── */
+@media (max-width: 1280px) {
+  .cc-kpi-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .cc-charts-row.cc-two-col {
+    grid-template-columns: 1fr;
+  }
+
+  .command-tab .tab-label {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 768px) {
+  .cc-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .cc-kpi-value {
+    font-size: 28px;
+  }
+
+  .command-tab-bar {
+    flex-wrap: wrap;
+  }
+
+  .command-tab {
+    flex: 1 1 45%;
+    min-width: 120px;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .cc-task-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cc-filter-search {
+    width: 100%;
   }
 }

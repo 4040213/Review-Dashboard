@@ -37,8 +37,9 @@ export default function ReworkList({ data, workorders }) {
         <span className="count-badge">{sorted.length} 条</span>
       </div>
 
-      <div className="focus-list" style={{ gridTemplateColumns: '1fr' }}>
-        {sorted.map((item) => {
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingRight: 4 }}>
+        <div className="focus-list" style={{ gridTemplateColumns: '1fr' }}>
+          {sorted.map((item) => {
           const reworkReasons = item.repeatedAdjustmentReasons || [];
           const rootCause = item.reworkRootCause || '';
           const rootCauseLabels = {
@@ -96,6 +97,7 @@ export default function ReworkList({ data, workorders }) {
             </article>
           );
         })}
+        </div>
       </div>
     </div>
   );

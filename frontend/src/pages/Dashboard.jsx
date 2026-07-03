@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getFeishuStatus, getHealth, getSources, getStats, getWorkorders, syncFeishu } from '../api/workorders.js';
+import { getFeishuStatus, getHealth, getSources, getStats, getWorkorders, syncFeishu, getCommandAll } from '../api/workorders.js';
 import AutoScrollWorkorders from '../components/AutoScrollWorkorders.jsx';
 import Charts from '../components/Charts.jsx';
 import ClassificationPanel from '../components/ClassificationPanel.jsx';
@@ -11,6 +11,11 @@ import TimeAnalysis from '../components/TimeAnalysis.jsx';
 import UploadExcel from '../components/UploadExcel.jsx';
 import ErrorDetailModal from '../components/ErrorDetailModal.jsx';
 import WorkorderDetailModal from '../components/WorkorderDetailModal.jsx';
+import TabNavigation from '../components/TabNavigation.jsx';
+import OverviewTab from '../components/commandCenter/OverviewTab.jsx';
+import DiagnosticsTab from '../components/commandCenter/DiagnosticsTab.jsx';
+import TaskListTab from '../components/commandCenter/TaskListTab.jsx';
+import ForecastTab from '../components/commandCenter/ForecastTab.jsx';
 import { downloadReviewReport } from '../utils/report.js';
 
 const emptyStats = {
@@ -62,7 +67,7 @@ export default function Dashboard() {
   const [health, setHealth] = useState('连接中');
   const [loading, setLoading] = useState(true);
   const [sources, setSources] = useState([]);
-  const [sourceId, setSourceId] = useState('');
+  const [sourceId, setSourceId] = useState('summer_2026');
   const [autoSyncEnabled, setAutoSyncEnabled] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState('');
   const [syncing, setSyncing] = useState(false);
@@ -81,6 +86,11 @@ export default function Dashboard() {
   const [detailWorkorder, setDetailWorkorder] = useState(null);
   const [errorDetail, setErrorDetail] = useState(null);
 
+  // ── 生产指挥舱状态 ──
+  const [activeCommandTab, setActiveCommandTab] = useState('overview');
+  const [commandData, setCommandData] = useState(null);
+  const [viewMode, setViewMode] = useState('legacy'); // 'command' | 'legacy'
+
   async function loadDashboardData(nextSourceId = sourceId) {
     if (!nextSourceId) return;
     setLoading(true);
@@ -89,8 +99,14 @@ export default function Dashboard() {
         getWorkorders(nextSourceId),
         getStats(nextSourceId)
       ]);
-      setWorkorders(workordersResult.workorders || []);
-      setStats({ ...emptyStats, ...(statsResult || {}) });
+      const loadedWorkorders = workordersResult.workorders || [];
+      const loadedStats = { ...emptyStats, ...(statsResult || {}) };
+      setWorkorders(loadedWorkorders);
+      setStats(loadedStats);
+      // Auto-adjust filter: if no valid data but has invalid, show all
+      if ((loadedStats.validAnalysisCount ?? 0) === 0 && (loadedStats.invalidAnalysisCount ?? 0) > 0) {
+        setFilterState((prev) => ({ ...prev, scope: 'all' }));
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -98,10 +114,26 @@ export default function Dashboard() {
     }
   }
 
+  // 加载指挥舱数据
+  async function loadCommandData(nextSourceId) {
+    if (!nextSourceId) return;
+    try {
+      const data = await getCommandAll(nextSourceId);
+      setCommandData(data);
+    } catch (error) {
+      console.error('Failed to load command center data:', error);
+    }
+  }
+
   function applySyncResult(result) {
     setWorkorders(result.workorders || []);
     setStats({ ...emptyStats, ...(result.stats || {}) });
     setLastSyncedAt(result.syncedAt || new Date().toISOString());
+    // Auto-adjust filter: if no valid data but has invalid, show all
+    const stats = result.stats || {};
+    if ((stats.validAnalysisCount ?? 0) === 0 && (stats.invalidAnalysisCount ?? 0) > 0) {
+      setFilterState((prev) => ({ ...prev, scope: 'all' }));
+    }
   }
 
   async function handleManualSync() {
@@ -124,6 +156,13 @@ export default function Dashboard() {
     setWorkorders(result.workorders || []);
     setStats({ ...emptyStats, ...(result.stats || {}) });
     setLastSyncedAt(new Date().toISOString());
+    // Auto-adjust filter: if no valid data but has invalid, show all
+    const stats = result.stats || {};
+    if ((stats.validAnalysisCount ?? 0) === 0 && (stats.invalidAnalysisCount ?? 0) > 0) {
+      setFilterState((prev) => ({ ...prev, scope: 'all' }));
+    }
+    // 刷新指挥舱数据
+    if (sourceId) loadCommandData(sourceId);
   }
 
   function handleReanalyzed(result) {
@@ -133,7 +172,31 @@ export default function Dashboard() {
     if (result?.stats) {
       setStats({ ...emptyStats, ...result.stats });
     }
+    // 刷新指挥舱数据
+    if (sourceId) loadCommandData(sourceId);
   }
+
+  // ── 指挥舱交互处理 ──
+
+  function handleHeatmapCellClick({ grade, week }) {
+    // 从热力图点击→跳转到Tab 3并筛选
+    setActiveCommandTab('tasklist');
+  }
+
+  function handleResearcherClick(name) {
+    // 从负载图点击→跳转到Tab 3并筛选
+    setActiveCommandTab('tasklist');
+  }
+
+  function handleStatusDrillDown(group) {
+    // 状态环形图下钻
+    // 可在此处理下钻逻辑
+  }
+
+  // 计算Tab徽章数
+  const tabBadgeCounts = useMemo(() => ({
+    tasklist: commandData?.tasklist?.workorders?.filter((w) => w.statusGroupV2 !== '已关闭').length || 0
+  }), [commandData]);
 
   // Handle filter changes from LeftConclusionPanel and FilterToolbar
   const handleFilterChange = useCallback((newFilter) => {
@@ -219,14 +282,25 @@ export default function Dashboard() {
     getHealth().then(() => setHealth('后端已连接')).catch(() => setHealth('后端未连接'));
     getSources().then((result) => {
       setSources(result.sources || []);
-      setSourceId(result.defaultSourceId || result.sources?.[0]?.id || '');
-    }).catch(console.error);
+      setSourceId(result.defaultSourceId || result.sources?.[0]?.id || 'summer_2026');
+    }).catch(() => {
+      console.error('Failed to load sources, using default');
+      setSourceId('summer_2026');
+    });
     getFeishuStatus().then(setFeishuStatus).catch(() => setFeishuStatus({ configured: false, hint: '无法检查飞书配置状态' }));
   }, []);
 
   useEffect(() => {
     loadDashboardData(sourceId);
+    loadCommandData(sourceId);
   }, [sourceId]);
+
+  // Auto-expand data source panel when no workorders are loaded
+  useEffect(() => {
+    if (!loading && workorders.length === 0) {
+      setDataSourceExpanded(true);
+    }
+  }, [loading, workorders.length]);
 
   useEffect(() => {
     if (!autoSyncEnabled || !sourceId) return undefined;
@@ -255,6 +329,66 @@ export default function Dashboard() {
           </button>
         </div>
       </header>
+
+      {/* View Mode Toggle */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12, gap: 8 }}>
+        <button
+          className={`secondary-button ${viewMode === 'command' ? 'active-view-btn' : ''}`}
+          onClick={() => setViewMode('command')}
+          style={{ fontSize: 12, padding: '6px 14px' }}
+        >
+          📊 生产指挥舱
+        </button>
+        <button
+          className={`secondary-button ${viewMode === 'legacy' ? 'active-view-btn' : ''}`}
+          onClick={() => setViewMode('legacy')}
+          style={{ fontSize: 12, padding: '6px 14px' }}
+        >
+          📋 复盘看板
+        </button>
+      </div>
+
+      {/* ── 生产指挥舱视图 ── */}
+      {viewMode === 'command' && (
+        <>
+          <TabNavigation
+            activeTab={activeCommandTab}
+            onTabChange={setActiveCommandTab}
+            badgeCounts={tabBadgeCounts}
+          />
+
+          <div className="cc-dashboard-content">
+            {activeCommandTab === 'overview' && (
+              <OverviewTab data={commandData?.overview} />
+            )}
+            {activeCommandTab === 'diagnostics' && (
+              <DiagnosticsTab
+                data={commandData?.diagnostics}
+                onCellClick={handleHeatmapCellClick}
+                onResearcherClick={handleResearcherClick}
+              />
+            )}
+            {activeCommandTab === 'tasklist' && (
+              <TaskListTab data={commandData?.tasklist} />
+            )}
+            {activeCommandTab === 'forecast' && (
+              <ForecastTab data={commandData?.forecast} />
+            )}
+          </div>
+
+          {/* 刷新时间 */}
+          {commandData?._meta && (
+            <div className="cc-refresh-info">
+              数据计算时间：{new Date(commandData._meta.computedAt).toLocaleString('zh-CN')}
+              {' · '}共 {commandData._meta.totalWorkorders} 条工单（有效 {commandData._meta.validWorkorders} 条）
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── 传统复盘看板视图（保留）── */}
+      {viewMode === 'legacy' && (
+      <>
 
       {/* Data Source & Upload — visually subdued, collapsible */}
       <div className="bottom-collapsible" style={{ marginTop: 20 }}>
@@ -365,6 +499,11 @@ export default function Dashboard() {
           onClose={() => setDetailWorkorder(null)}
         />
       )}
+
+      {/* Close legacy view wrapper */}
+      </>
+      )}
+
     </main>
   );
 }

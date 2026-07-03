@@ -20,13 +20,12 @@ export default function LeftConclusionPanel({ stats, onFilterChange, activeFilte
   const totalValid = stats.validAnalysisCount || 0;
   const suspendedCount = groupMap.get('暂停/挂起')?.count || 0;
 
-  // Default select Top1 error on load
+  // Default select Top1 error on load for visual highlight only (do not auto-filter the table)
   useEffect(() => {
     const topError = stats.errorContentRanking?.[0];
     if (topError && !activeItemKey) {
       setActiveSection('error');
       setActiveItemKey(topError.name);
-      onFilterChange?.({ type: 'errorContent', value: topError.name, label: topError.name });
     }
   }, [stats.errorContentRanking?.[0]?.name]);
 
