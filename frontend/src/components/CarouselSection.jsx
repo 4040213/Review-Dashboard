@@ -104,7 +104,7 @@ export default function CarouselSection({
       <div className="carousel-header">
         <div>
           <div className={`section-title ${titleClass}`}>{title}</div>
-          {subtitle && <p className="muted" style={{ fontSize: 12, margin: '2px 0 0' }}>{subtitle}</p>}
+          {subtitle && <p className="muted" style={{ fontSize: 'var(--fs-caption)', margin: '2px 0 0' }}>{subtitle}</p>}
         </div>
         <div className="carousel-controls">
           {hasEnoughItems && autoPlay && (
@@ -130,7 +130,7 @@ export default function CarouselSection({
       </div>
 
       {items.length === 0 ? (
-        <div className="empty-state small-empty" style={{ padding: 16, fontSize: 13 }}>{emptyMessage}</div>
+        <div className="empty-state small-empty" style={{ padding: 16, fontSize: 'var(--fs-body-sm)' }}>{emptyMessage}</div>
       ) : (
         <div className="carousel-track-wrapper">
           <div

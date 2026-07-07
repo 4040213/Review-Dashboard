@@ -1,15 +1,15 @@
 import { useState } from 'react';
 
 const INVALID_TYPE_LABELS = {
-  collaboration_placeholder: { label: '📄 协作占位', desc: '组课文档等多人协作中间产物，非真实问题工单', color: '#2563EB' },
-  test_data: { label: '🧪 测试数据', desc: '测试或调试用占位数据', color: '#D97706' },
-  blank: { label: '📭 空白/无效', desc: '描述为空或仅为占位符（如"-""/""无"）', color: '#94A3B8' },
-  incomplete: { label: '⚠️ 信息不完整', desc: '核心字段缺失或描述过短无法分类', color: '#F43F5E' }
+  collaboration_placeholder: { label: '协作占位', desc: '组课文档等多人协作中间产物，非真实问题工单', color: 'var(--brand)' },
+  test_data: { label: '测试数据', desc: '测试或调试用占位数据', color: 'var(--gold)' },
+  blank: { label: '空白/无效', desc: '描述为空或仅为占位符（如"-""/""无"）', color: 'var(--text-muted)' },
+  incomplete: { label: '信息不完整', desc: '核心字段缺失或描述过短无法分类', color: 'var(--red)' }
 };
 
 function InvalidGroup({ type, workorders, counts }) {
   const [collapsed, setCollapsed] = useState(false);
-  const info = INVALID_TYPE_LABELS[type] || { label: type, desc: '', color: '#64748b' };
+  const info = INVALID_TYPE_LABELS[type] || { label: type, desc: '', color: 'var(--text-secondary)' };
   const count = counts[type] || 0;
 
   if (count === 0) return null;
@@ -30,19 +30,19 @@ function InvalidGroup({ type, workorders, counts }) {
           borderLeft: `3px solid ${info.color}`
         }}
       >
-        <span style={{ fontSize: 18 }}>{collapsed ? '▶' : '▼'}</span>
-        <span style={{ fontWeight: 600, fontSize: 14, color: '#0F172A', flex: 1 }}>{info.label}</span>
+        <span style={{ fontSize: 'var(--fs-h1)' }}>{collapsed ? '▶' : '▼'}</span>
+        <span style={{ fontWeight: 600, fontSize: 'var(--fs-body)', color: 'var(--text-primary)', flex: 1 }}>{info.label}</span>
         <span className="count-badge">{count} 条</span>
       </div>
       {!collapsed && (
         <div style={{ padding: '8px 14px 0' }}>
-          <p style={{ fontSize: 12, color: '#64748B', margin: '0 0 8px' }}>{info.desc}</p>
+          <p style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-secondary)', margin: '0 0 8px' }}>{info.desc}</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {workorders.filter((w) => w.invalidType === type).slice(0, 20).map((w) => (
               <div
                 key={w.id}
                 style={{
-                  fontSize: 13,
+                  fontSize: 'var(--fs-body-sm)',
                   padding: '8px 12px',
                   background: 'rgba(255,255,255,0.6)',
                   borderRadius: 6,
@@ -52,15 +52,15 @@ function InvalidGroup({ type, workorders, counts }) {
                   gap: 12
                 }}
               >
-                <span style={{ color: '#475467', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {w.description || <em style={{ color: '#94A3B8' }}>无描述</em>}
+                <span style={{ color: 'var(--text-secondary)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {w.description || <em style={{ color: 'var(--text-muted)' }}>无描述</em>}
                 </span>
-                <span style={{ color: '#94A3B8', whiteSpace: 'nowrap', fontSize: 11 }}>
+                <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 'var(--fs-overline)' }}>
                   {w.type || '-'} · {w.grade || '-'} {w.week || ''}
                 </span>
               </div>
             ))}
-            {count > 20 && <p style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center' }}>还有 {count - 20} 条未显示...</p>}
+            {count > 20 && <p style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)', textAlign: 'center' }}>还有 {count - 20} 条未显示...</p>}
           </div>
         </div>
       )}
@@ -76,7 +76,7 @@ export default function InvalidList({ data, workorders }) {
   if (!invalidItems.length) {
     return (
       <div className="panel" style={{ marginTop: 12 }}>
-        <div className="empty-state small-empty">暂无不合格工单 🎉</div>
+        <div className="empty-state small-empty">暂无不合格工单</div>
       </div>
     );
   }
@@ -91,7 +91,7 @@ export default function InvalidList({ data, workorders }) {
     <div className="panel" style={{ marginTop: 12 }}>
       <div className="section-heading" style={{ marginBottom: 16 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: 16 }}>不合格工单</h2>
+          <h2 style={{ margin: 0, fontSize: 'var(--fs-h2)' }}>不合格工单</h2>
           <p className="muted" style={{ margin: '4px 0 0' }}>
             共 {invalidItems.length} 条工单未进入核心分析（含协作占位、测试数据、空白无效、信息不完整）
           </p>

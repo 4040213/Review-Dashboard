@@ -51,7 +51,7 @@ export default function WorkorderDetailModal({ workorder, onClose }) {
         <div className="detail-modal-header">
           <div>
             <h2>工单详情</h2>
-            <p className="muted" style={{ margin: 0, fontSize: 13 }}>只读查看，不提供编辑功能</p>
+            <p className="muted" style={{ margin: 0, fontSize: 'var(--fs-body-sm)' }}>只读查看，不提供编辑功能</p>
           </div>
           <button className="detail-modal-close" onClick={onClose} aria-label="关闭">
             ✕
@@ -81,7 +81,7 @@ export default function WorkorderDetailModal({ workorder, onClose }) {
                 <div key={field.label} className="detail-field-item">
                   <dt>{field.label}</dt>
                   <dd className={field.isRisk ? `detail-risk-value risk-${workorder.riskLevel}` : ''}>
-                    {field.isRisk ? <span className={`risk-tag risk-${workorder.riskLevel}`} style={{ fontSize: 13 }}>{formatValue(field.value)}</span> : formatValue(field.value)}
+                    {field.isRisk ? <span className={`risk-tag risk-${workorder.riskLevel}`} style={{ fontSize: 'var(--fs-body-sm)' }}>{formatValue(field.value)}</span> : formatValue(field.value)}
                   </dd>
                 </div>
               ))}

@@ -63,13 +63,13 @@ export default function RightDataPanel({
           >
             {tab.label}
             {tab.key === 'pending' && pendingReviewData?.length > 0 && (
-              <span style={{ marginLeft: 6, background: '#fee4e2', color: '#b42318', padding: '1px 6px', borderRadius: 8, fontSize: 11 }}>{pendingReviewData.length}</span>
+              <span style={{ marginLeft: 6, background: 'var(--brand-light)', color: 'var(--brand-dark)', padding: '1px 6px', borderRadius: 8, fontSize: 'var(--fs-overline)' }}>{pendingReviewData.length}</span>
             )}
             {tab.key === 'rework' && (reworkData?.length || stats?.repeatedAdjustmentCandidateCount) > 0 && (
-              <span style={{ marginLeft: 6, background: '#fef0c7', color: '#b54708', padding: '1px 6px', borderRadius: 8, fontSize: 11 }}>{reworkData?.length || stats?.repeatedAdjustmentCandidateCount}</span>
+              <span style={{ marginLeft: 6, background: '#fef0c7', color: 'var(--gold)', padding: '1px 6px', borderRadius: 8, fontSize: 'var(--fs-overline)' }}>{reworkData?.length || stats?.repeatedAdjustmentCandidateCount}</span>
             )}
             {tab.key === 'invalid' && (invalidData?.length || stats?.invalidAnalysisCount) > 0 && (
-              <span style={{ marginLeft: 6, background: '#f1f5f9', color: '#64748b', padding: '1px 6px', borderRadius: 8, fontSize: 11 }}>{invalidData?.length || stats?.invalidAnalysisCount}</span>
+              <span style={{ marginLeft: 6, background: '#F5F2F1', color: 'var(--text-secondary)', padding: '1px 6px', borderRadius: 8, fontSize: 'var(--fs-overline)' }}>{invalidData?.length || stats?.invalidAnalysisCount}</span>
             )}
           </button>
         ))}

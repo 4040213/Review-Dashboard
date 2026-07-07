@@ -7,10 +7,10 @@ const INVALID_TYPE_OPTIONS = [
 ];
 
 const STATUS_COLORS = {
-  '已归档': '#027a48',
-  '待验收': '#2878ff',
-  '处理中': '#b54708',
-  '暂停/挂起': '#94a3b8'
+  '已归档': 'var(--green)',
+  '待验收': 'var(--brand)',
+  '处理中': 'var(--gold)',
+  '暂停/挂起': 'var(--text-muted)'
 };
 
 export default function FilterToolbar({ filterState, onFilterChange, workorders, stats }) {
@@ -62,7 +62,7 @@ export default function FilterToolbar({ filterState, onFilterChange, workorders,
       </div>
 
       <div className="filter-checkbox-group">
-        <span style={{ fontSize: 12, color: '#94a3b8', marginRight: 2 }}>状态:</span>
+        <span style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)', marginRight: 2 }}>状态:</span>
         {STATUS_OPTIONS.map((status) => (
           <label key={status} className="filter-checkbox-label" style={{ color: STATUS_COLORS[status] }}>
             <input
@@ -77,7 +77,7 @@ export default function FilterToolbar({ filterState, onFilterChange, workorders,
 
       {showInvalidFilters && stats.invalidAnalysisCount > 0 && (
         <div className="filter-checkbox-group">
-          <span style={{ fontSize: 12, color: '#94a3b8', marginRight: 2 }}>无效类型:</span>
+          <span style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)', marginRight: 2 }}>无效类型:</span>
           {INVALID_TYPE_OPTIONS.map((type) => (
             <label key={type.key} className="filter-checkbox-label">
               <input

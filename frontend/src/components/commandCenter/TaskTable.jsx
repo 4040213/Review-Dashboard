@@ -2,13 +2,14 @@
  * Tab 3: 待办工单清单 — 优先级排序表格
  */
 import { useState, useMemo } from 'react';
+import { Icon } from '@iconify/react';
 import { cmdColors, typeCategoryColors } from '../charts/chartTheme.js';
 
 function getPriorityLabel(priority) {
   switch (priority) {
-    case 'blocking': return { icon: '🔴', label: '阻断', color: cmdColors.red };
-    case 'aging': return { icon: '🟠', label: '高龄', color: cmdColors.orange };
-    default: return { icon: '🟡', label: '普通', color: cmdColors.textSecondary };
+    case 'blocking': return { icon: 'mdi:close-circle', label: '阻断', color: cmdColors.red };
+    case 'aging': return { icon: 'mdi:clock-alert-outline', label: '高龄', color: cmdColors.orange };
+    default: return { icon: 'mdi:alert-circle', label: '普通', color: cmdColors.textSecondary };
   }
 }
 
@@ -98,8 +99,8 @@ export default function TaskTable({ workorders, filters, onFilterChange }) {
     <div className="cc-task-table-wrap">
       {/* Quick Actions */}
       <div className="cc-task-actions">
-        <button className="secondary-button" onClick={exportCSV}>📥 导出今日待办清单</button>
-        <button className="secondary-button" onClick={copyAgingIds}>📋 一键复制高龄工单ID</button>
+        <button className="secondary-button" onClick={exportCSV}><Icon icon="mdi:file-export-outline" width={14} height={14} style={{marginRight:4}} />导出今日待办清单</button>
+        <button className="secondary-button" onClick={copyAgingIds}><Icon icon="mdi:clipboard-multiple-outline" width={14} height={14} style={{marginRight:4}} />一键复制高龄工单ID</button>
         <span className="cc-task-count">共 {sorted.length} 条工单</span>
       </div>
 
@@ -124,7 +125,7 @@ export default function TaskTable({ workorders, filters, onFilterChange }) {
               const priority = getPriorityLabel(w.priority);
               return (
                 <tr key={w.id} className={w.isBlocking ? 'cc-row-blocking' : w.isAging ? 'cc-row-aging' : ''}>
-                  <td><span style={{ color: priority.color }}>{priority.icon} {priority.label}</span></td>
+                  <td><span style={{ color: priority.color, display:'flex',alignItems:'center',gap:4 }}><Icon icon={priority.icon} width={14} height={14} /> {priority.label}</span></td>
                   <td>{w.id}</td>
                   <td>{w.gradeWeek}</td>
                   <td className="cc-desc-cell" title={w.description}>

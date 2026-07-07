@@ -1,14 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getFeishuStatus, getHealth, getSources, getStats, getWorkorders, syncFeishu, getCommandAll } from '../api/workorders.js';
-import AutoScrollWorkorders from '../components/AutoScrollWorkorders.jsx';
 import Charts from '../components/Charts.jsx';
 import ClassificationPanel from '../components/ClassificationPanel.jsx';
 import DataSourceBar from '../components/DataSourceBar.jsx';
-import LeftConclusionPanel from '../components/LeftConclusionPanel.jsx';
-import RightDataPanel from '../components/RightDataPanel.jsx';
-import StatsCards from '../components/StatsCards.jsx';
 import TimeAnalysis from '../components/TimeAnalysis.jsx';
 import UploadExcel from '../components/UploadExcel.jsx';
+import OverviewDashboard from '../components/OverviewDashboard.jsx';
 import ErrorDetailModal from '../components/ErrorDetailModal.jsx';
 import WorkorderDetailModal from '../components/WorkorderDetailModal.jsx';
 import TabNavigation from '../components/TabNavigation.jsx';
@@ -17,6 +14,9 @@ import DiagnosticsTab from '../components/commandCenter/DiagnosticsTab.jsx';
 import TaskListTab from '../components/commandCenter/TaskListTab.jsx';
 import ForecastTab from '../components/commandCenter/ForecastTab.jsx';
 import { downloadReviewReport } from '../utils/report.js';
+import Sidebar from '../components/Sidebar.jsx';
+import UserProfile from '../components/UserProfile.jsx';
+import { Icon } from '@iconify/react';
 
 const emptyStats = {
   totalRawCount: 0,
@@ -78,9 +78,7 @@ export default function Dashboard() {
   const [activeFilter, setActiveFilter] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
   const [filterState, setFilterState] = useState(defaultFilterState);
-  const [bottomExpanded, setBottomExpanded] = useState(false);
   const [showClassificationPanel, setShowClassificationPanel] = useState(false);
-  const [dataSourceExpanded, setDataSourceExpanded] = useState(false);
 
   // Detail modal state
   const [detailWorkorder, setDetailWorkorder] = useState(null);
@@ -134,6 +132,8 @@ export default function Dashboard() {
     if ((stats.validAnalysisCount ?? 0) === 0 && (stats.invalidAnalysisCount ?? 0) > 0) {
       setFilterState((prev) => ({ ...prev, scope: 'all' }));
     }
+    // 刷新指挥舱数据（飞书同步后图表需要更新）
+    if (sourceId) loadCommandData(sourceId);
   }
 
   async function handleManualSync() {
@@ -295,13 +295,6 @@ export default function Dashboard() {
     loadCommandData(sourceId);
   }, [sourceId]);
 
-  // Auto-expand data source panel when no workorders are loaded
-  useEffect(() => {
-    if (!loading && workorders.length === 0) {
-      setDataSourceExpanded(true);
-    }
-  }, [loading, workorders.length]);
-
   useEffect(() => {
     if (!autoSyncEnabled || !sourceId) return undefined;
     const timer = window.setInterval(() => {
@@ -310,101 +303,150 @@ export default function Dashboard() {
     return () => window.clearInterval(timer);
   }, [autoSyncEnabled, sourceId]);
 
+  // ── 侧边栏导航处理 ──
+  function handleNavigate(view) {
+    if (view === 'command' || view === 'legacy' || view === 'profile') {
+      setViewMode(view);
+    } else if (view === 'rules') {
+      setShowClassificationPanel(true);
+    } else if (view === 'export') {
+      if (stats.totalRawCount) downloadReviewReport(stats);
+    } else if (view === 'import' || view === 'feishu') {
+      // 数据导入/飞书同步 → 切换到数据看板，数据源面板始终可见
+      setViewMode('legacy');
+    }
+  }
+
+  function handleSidebarAction(actionId) {
+    if (actionId === 'export') {
+      if (stats.totalRawCount) downloadReviewReport(stats);
+    }
+  }
+
   return (
-    <main className="dashboard">
-      {/* Header */}
-      <header className="hero">
-        <div>
-          <p className="eyebrow">Course Production · Workorder Review</p>
-          <h1>课程生产工单复盘看板</h1>
-          <p>聚焦有效工单中的高频出错内容、需求不明确、状态流转和疑似反复调整问题，辅助团队持续改进生产质量。</p>
-        </div>
-        <div className="hero-actions">
-          <span className={`health-badge ${health === '后端已连接' ? 'ok' : 'warn'}`}>{health}</span>
-          <button className="secondary-button" type="button" disabled={!stats.totalRawCount} onClick={() => downloadReviewReport(stats)}>
-            📄 导出复盘报告
-          </button>
-          <button className="secondary-button" type="button" onClick={() => setShowClassificationPanel(true)} title="管理分类规则">
-            ⚙ 分类规则
-          </button>
-        </div>
-      </header>
+    <div className="dashboard">
+      {/* ── 侧边栏 ── */}
+      <Sidebar
+        activeView={viewMode}
+        onNavigate={handleNavigate}
+        onAction={handleSidebarAction}
+      />
 
-      {/* View Mode Toggle */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12, gap: 8 }}>
-        <button
-          className={`secondary-button ${viewMode === 'command' ? 'active-view-btn' : ''}`}
-          onClick={() => setViewMode('command')}
-          style={{ fontSize: 12, padding: '6px 14px' }}
-        >
-          📊 生产指挥舱
-        </button>
-        <button
-          className={`secondary-button ${viewMode === 'legacy' ? 'active-view-btn' : ''}`}
-          onClick={() => setViewMode('legacy')}
-          style={{ fontSize: 12, padding: '6px 14px' }}
-        >
-          📋 复盘看板
-        </button>
-      </div>
+      {/* ── 主内容区 ── */}
+      <div className="dashboard-main">
 
-      {/* ── 生产指挥舱视图 ── */}
-      {viewMode === 'command' && (
-        <>
-          <TabNavigation
-            activeTab={activeCommandTab}
-            onTabChange={setActiveCommandTab}
-            badgeCounts={tabBadgeCounts}
-          />
-
-          <div className="cc-dashboard-content">
-            {activeCommandTab === 'overview' && (
-              <OverviewTab data={commandData?.overview} />
-            )}
-            {activeCommandTab === 'diagnostics' && (
-              <DiagnosticsTab
-                data={commandData?.diagnostics}
-                onCellClick={handleHeatmapCellClick}
-                onResearcherClick={handleResearcherClick}
-              />
-            )}
-            {activeCommandTab === 'tasklist' && (
-              <TaskListTab data={commandData?.tasklist} />
-            )}
-            {activeCommandTab === 'forecast' && (
-              <ForecastTab data={commandData?.forecast} />
-            )}
-          </div>
-
-          {/* 刷新时间 */}
-          {commandData?._meta && (
-            <div className="cc-refresh-info">
-              数据计算时间：{new Date(commandData._meta.computedAt).toLocaleString('zh-CN')}
-              {' · '}共 {commandData._meta.totalWorkorders} 条工单（有效 {commandData._meta.validWorkorders} 条）
+        {/* ── 顶部栏 ── */}
+        <div className="new-topbar">
+          <div className="new-topbar-left">
+            <div className="new-topbar-icon">
+              <Icon icon="mdi:view-dashboard-outline" width={20} height={20} />
             </div>
-          )}
-        </>
-      )}
+            <div>
+              <div className="new-topbar-breadcrumb">
+                雪球课堂 <em>/</em> 数据看板 <em>/</em> <span style={{color:'var(--text-primary)',fontWeight:600}}>工单复盘</span>
+              </div>
+              <h1>课程生产工单 · 数据复盘看板</h1>
+            </div>
+          </div>
+          <div className="new-topbar-right">
+            <div className="new-topbar-search">
+              <Icon icon="mdi:magnify" width={16} height={16} style={{color:'var(--text-muted)',flexShrink:0}} />
+              <input
+                type="text"
+                placeholder="搜索工单、关键词、处理人..."
+                value={filterState.keyword || ''}
+                onChange={(e) => handleToolbarFilterChange({ ...filterState, keyword: e.target.value })}
+              />
+              <kbd>⌘K</kbd>
+            </div>
+            <button className="new-topbar-btn" title="通知">
+              <Icon icon="mdi:bell-outline" width={18} height={18} />
+            </button>
+            <button className="new-topbar-btn" title="刷新" onClick={() => { loadDashboardData(sourceId); loadCommandData(sourceId); }}>
+              <Icon icon="mdi:refresh" width={18} height={18} />
+            </button>
+            <span className={`health-badge ${health === '后端已连接' ? 'ok' : 'warn'}`} style={{fontSize:11}}>
+              <Icon icon={health === '后端已连接' ? 'mdi:check-circle' : 'mdi:close-circle'} width={14} height={14} style={{color: health === '后端已连接' ? 'var(--green)' : 'var(--red)', marginRight: 4}} />
+              {health === '后端已连接' ? '已连接' : '未连接'}
+            </span>
+            <button
+              className="new-topbar-btn primary"
+              type="button"
+              disabled={!stats.totalRawCount}
+              onClick={() => downloadReviewReport(stats)}
+            >
+              <Icon icon="mdi:file-export-outline" width={16} height={16} style={{marginRight:4}} /> 导出报告
+            </button>
+          </div>
+        </div>
 
-      {/* ── 传统复盘看板视图（保留）── */}
-      {viewMode === 'legacy' && (
-      <>
+        {/* ── 内容区 ── */}
+        <div className="content-area">
 
-      {/* Data Source & Upload — visually subdued, collapsible */}
-      <div className="bottom-collapsible" style={{ marginTop: 20 }}>
-        <button
-          className={`collapsible-toggle ${dataSourceExpanded ? 'open' : ''}`}
-          onClick={() => setDataSourceExpanded(!dataSourceExpanded)}
-          style={{ padding: '10px 18px', fontSize: 13 }}
-        >
-          <span className="toggle-icon">▶</span>
-          {dataSourceExpanded ? '收起' : '展开'} 数据源配置与上传
-          <span style={{ marginLeft: 8, fontSize: 12, color: '#94A3B8', fontWeight: 400 }}>
-            {sources.length ? `当前数据源：${sources.find(s => s.id === sourceId)?.name || '-'}` : '未配置'}
-          </span>
-        </button>
-        {dataSourceExpanded && (
-          <div className="collapsible-content">
+        {/* ── 个人主页视图 ── */}
+        {viewMode === 'profile' && (
+          <UserProfile
+            stats={stats}
+            workorders={workorders}
+            feishuStatus={feishuStatus}
+            health={health}
+          />
+        )}
+
+        {/* ── 生产指挥舱视图 ── */}
+        {viewMode === 'command' && (
+          <>
+            <TabNavigation
+              activeTab={activeCommandTab}
+              onTabChange={setActiveCommandTab}
+              badgeCounts={tabBadgeCounts}
+            />
+
+            <div className="cc-dashboard-content">
+              {activeCommandTab === 'overview' && (
+                <OverviewTab data={commandData?.overview} />
+              )}
+              {activeCommandTab === 'diagnostics' && (
+                <DiagnosticsTab
+                  data={commandData?.diagnostics}
+                  onCellClick={handleHeatmapCellClick}
+                  onResearcherClick={handleResearcherClick}
+                />
+              )}
+              {activeCommandTab === 'tasklist' && (
+                <TaskListTab data={commandData?.tasklist} />
+              )}
+              {activeCommandTab === 'forecast' && (
+                <ForecastTab data={commandData?.forecast} />
+              )}
+            </div>
+
+            {/* 刷新时间 */}
+            {commandData?._meta && (
+              <div className="cc-refresh-info">
+                数据计算时间：{new Date(commandData._meta.computedAt).toLocaleString('zh-CN')}
+                {' · '}共 {commandData._meta.totalWorkorders} 条工单（有效 {commandData._meta.validWorkorders} 条）
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── 新版数据看板视图 ── */}
+        {viewMode === 'legacy' && (
+        <>
+
+        {/* Data Source & Upload — always visible */}
+        <div className="panel" style={{ marginBottom: 8 }}>
+          <div className="panel-hd">
+            <span className="ph-t">
+              <span className="ph-dot" style={{ background: 'var(--teal)' }} />
+              数据源配置与上传
+            </span>
+            <span style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)', fontWeight: 400 }}>
+              {sources.length ? `当前数据源：${sources.find(s => s.id === sourceId)?.name || '-'}` : '未配置'}
+            </span>
+          </div>
+          <div className="panel-bd">
             <DataSourceBar
               sources={sources} sourceId={sourceId} autoSyncEnabled={autoSyncEnabled}
               lastSyncedAt={lastSyncedAt} syncing={syncing} syncMessage={syncMessage}
@@ -413,97 +455,78 @@ export default function Dashboard() {
             />
             <UploadExcel sourceId={sourceId} onUploaded={handleUploaded} />
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Stats Cards — prominent KPI row */}
-      <StatsCards stats={stats} onFilterChange={handleFilterChange} />
-
-      {/* Main Split Layout — conclusion (left) + data table (right) */}
-      <div className="dashboard-split">
-        <LeftConclusionPanel
+        {/* ── 新版 Overview Dashboard ── */}
+        <OverviewDashboard
           stats={stats}
-          onFilterChange={handleFilterChange}
-          activeFilter={activeFilter}
-          onErrorCardClick={setErrorDetail}
-        />
-        <RightDataPanel
+          workorders={workorders}
+          commandData={commandData}
           activeTab={activeTab}
           onTabChange={setActiveTab}
-          workorders={displayedWorkorders}
-          stats={stats}
-          activeFilter={activeFilter}
+          onFilterChange={handleFilterChange}
+          displayedWorkorders={displayedWorkorders}
           filterState={filterState}
-          onFilterChange={handleToolbarFilterChange}
+          onToolbarFilterChange={handleToolbarFilterChange}
           pendingReviewData={pendingReviewData}
           reworkData={reworkData}
           invalidData={invalidData}
           onToggleUrgent={handleToggleUrgent}
+          activeFilter={activeFilter}
+          onErrorCardClick={setErrorDetail}
+          focusWorkorders={focusWorkorders}
+          onDetailCardClick={setDetailWorkorder}
         />
-      </div>
 
-      {/* Auto-scroll Focus Workorders — prominent */}
-      <AutoScrollWorkorders
-        workorders={focusWorkorders}
-        onCardClick={setDetailWorkorder}
-        autoPlay={true}
-        maxItems={20}
-      />
+        {/* Supplementary Charts & Time Analysis — always visible */}
+        <div className="sec-header">
+          <span className="sec-title">辅助图表与时间分析</span>
+        </div>
+        <TimeAnalysis stats={stats} />
+        <Charts stats={stats} />
 
-      {/* Bottom Collapsible: Charts & Time Analysis */}
-      <div className="bottom-collapsible">
-        <button
-          className={`collapsible-toggle ${bottomExpanded ? 'open' : ''}`}
-          onClick={() => setBottomExpanded(!bottomExpanded)}
-        >
-          <span className="toggle-icon">▶</span>
-          {bottomExpanded ? '收起' : '展开'} 辅助图表与时间分析
-        </button>
-        {bottomExpanded && (
-          <div className="collapsible-content">
-            <TimeAnalysis stats={stats} />
-            <Charts stats={stats} />
-          </div>
+        {/* Loading indicator */}
+        {loading && <div className="panel loading" style={{ marginTop: 20 }}>正在读取本地工单数据...</div>}
+
+        {/* Close legacy view wrapper */}
+        </>
         )}
-      </div>
 
-      {/* Loading indicator */}
-      {loading && <div className="panel loading" style={{ marginTop: 20 }}>正在读取本地工单数据...</div>}
+        </div>{/* /content-area */}
 
-      {/* Classification Panel (slide-out) */}
-      {showClassificationPanel && (
-        <ClassificationPanel
-          sourceId={sourceId}
-          stats={stats}
-          onClose={() => setShowClassificationPanel(false)}
-          onReanalyzed={handleReanalyzed}
-        />
-      )}
+        {/* ── 全局弹窗（两种视图共用）── */}
 
-      {/* Error Detail Modal */}
-      {errorDetail && (
-        <ErrorDetailModal
-          item={errorDetail}
-          onClose={() => setErrorDetail(null)}
-          onViewExample={(example) => {
-            setErrorDetail(null);
-            setDetailWorkorder(example);
-          }}
-        />
-      )}
+        {/* Classification Panel (slide-out) */}
+        {showClassificationPanel && (
+          <ClassificationPanel
+            sourceId={sourceId}
+            stats={stats}
+            onClose={() => setShowClassificationPanel(false)}
+            onReanalyzed={handleReanalyzed}
+          />
+        )}
 
-      {/* Detail Modal */}
-      {detailWorkorder && (
-        <WorkorderDetailModal
-          workorder={detailWorkorder}
-          onClose={() => setDetailWorkorder(null)}
-        />
-      )}
+        {/* Error Detail Modal */}
+        {errorDetail && (
+          <ErrorDetailModal
+            item={errorDetail}
+            onClose={() => setErrorDetail(null)}
+            onViewExample={(example) => {
+              setErrorDetail(null);
+              setDetailWorkorder(example);
+            }}
+          />
+        )}
 
-      {/* Close legacy view wrapper */}
-      </>
-      )}
+        {/* Detail Modal */}
+        {detailWorkorder && (
+          <WorkorderDetailModal
+            workorder={detailWorkorder}
+            onClose={() => setDetailWorkorder(null)}
+          />
+        )}
 
-    </main>
+      </div>{/* /dashboard-main */}
+    </div>
   );
 }

@@ -118,10 +118,10 @@ export default function ClassificationPanel({ sourceId, stats, onClose, onReanal
       <div className="slide-panel" onClick={(e) => e.stopPropagation()} style={{ width: 560 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 18 }}>⚙ 分类规则管理</h2>
-            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748b' }}>自定义问题分类规则，修改后需重新分析</p>
+            <h2 style={{ margin: 0, fontSize: 'var(--fs-h1)' }}>分类规则管理</h2>
+            <p style={{ margin: '4px 0 0', fontSize: 'var(--fs-body-sm)', color: 'var(--text-secondary)' }}>自定义问题分类规则，修改后需重新分析</p>
           </div>
-          <button onClick={onClose} style={{ border: 'none', background: 'transparent', fontSize: 20, cursor: 'pointer', color: '#94a3b8' }}>✕</button>
+          <button onClick={onClose} style={{ border: 'none', background: 'transparent', fontSize: 'var(--fs-display)', cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
         </div>
 
         {message && (
@@ -129,9 +129,9 @@ export default function ClassificationPanel({ sourceId, stats, onClose, onReanal
             padding: '10px 14px',
             borderRadius: 8,
             marginBottom: 14,
-            fontSize: 13,
-            background: message.includes('失败') ? '#fee4e2' : '#dcfae6',
-            color: message.includes('失败') ? '#b42318' : '#027a48'
+            fontSize: 'var(--fs-body-sm)',
+            background: message.includes('失败') ? 'var(--brand-light)' : 'var(--teal-light)',
+            color: message.includes('失败') ? 'var(--brand-dark)' : 'var(--green)'
           }}>
             {message}
           </div>
@@ -142,10 +142,10 @@ export default function ClassificationPanel({ sourceId, stats, onClose, onReanal
         ) : (
           <>
             <div style={{ marginBottom: 14, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button className="secondary-button" type="button" onClick={addRule} style={{ fontSize: 13, padding: '6px 14px' }}>+ 新增分类</button>
-              <button className="secondary-button" type="button" onClick={handleExport} style={{ fontSize: 13, padding: '6px 14px' }}>导出规则</button>
-              <button className="secondary-button" type="button" onClick={handleImport} style={{ fontSize: 13, padding: '6px 14px' }}>导入规则</button>
-              <button className="secondary-button" type="button" onClick={handleReset} style={{ fontSize: 13, padding: '6px 14px', color: '#b42318' }}>恢复默认</button>
+              <button className="secondary-button" type="button" onClick={addRule} style={{ fontSize: 'var(--fs-body-sm)', padding: '6px 14px' }}>+ 新增分类</button>
+              <button className="secondary-button" type="button" onClick={handleExport} style={{ fontSize: 'var(--fs-body-sm)', padding: '6px 14px' }}>导出规则</button>
+              <button className="secondary-button" type="button" onClick={handleImport} style={{ fontSize: 'var(--fs-body-sm)', padding: '6px 14px' }}>导入规则</button>
+              <button className="secondary-button" type="button" onClick={handleReset} style={{ fontSize: 'var(--fs-body-sm)', padding: '6px 14px', color: 'var(--brand-dark)' }}>恢复默认</button>
             </div>
 
             <div style={{ maxHeight: 340, overflowY: 'auto', marginBottom: 14 }}>
@@ -154,7 +154,7 @@ export default function ClassificationPanel({ sourceId, stats, onClose, onReanal
                   display: 'flex',
                   gap: 8,
                   padding: '10px 0',
-                  borderBottom: '1px solid #f1f5f9',
+                  borderBottom: '1px solid #F5F2F1',
                   alignItems: 'center'
                 }}>
                   <div style={{ flex: 1 }}>
@@ -163,20 +163,20 @@ export default function ClassificationPanel({ sourceId, stats, onClose, onReanal
                       value={rule.category}
                       onChange={(e) => updateRule(index, 'category', e.target.value)}
                       placeholder="分类名称"
-                      style={{ width: '100%', padding: '6px 8px', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 13, marginBottom: 4 }}
+                      style={{ width: '100%', padding: '6px 8px', border: '1px solid #E8E0DE', borderRadius: 6, fontSize: 'var(--fs-body-sm)', marginBottom: 4 }}
                     />
                     <input
                       type="text"
                       value={(rule.keywords || []).join(', ')}
                       onChange={(e) => updateKeywords(index, e.target.value)}
                       placeholder="关键词（逗号分隔）"
-                      style={{ width: '100%', padding: '6px 8px', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 12, color: '#64748b' }}
+                      style={{ width: '100%', padding: '6px 8px', border: '1px solid #E8E0DE', borderRadius: 6, fontSize: 'var(--fs-caption)', color: 'var(--text-secondary)' }}
                     />
                   </div>
                   <button
                     type="button"
                     onClick={() => removeRule(index)}
-                    style={{ border: 'none', background: 'transparent', color: '#d92d20', cursor: 'pointer', fontSize: 16, flexShrink: 0 }}
+                    style={{ border: 'none', background: 'transparent', color: 'var(--brand)', cursor: 'pointer', fontSize: 'var(--fs-h2)', flexShrink: 0 }}
                     title="删除"
                   >
                     ✕
@@ -184,14 +184,14 @@ export default function ClassificationPanel({ sourceId, stats, onClose, onReanal
                 </div>
               ))}
               {rules.length === 0 && (
-                <div className="empty-state" style={{ padding: 20, fontSize: 13 }}>暂无分类规则，点击"新增分类"开始</div>
+                <div className="empty-state" style={{ padding: 20, fontSize: 'var(--fs-body-sm)' }}>暂无分类规则，点击"新增分类"开始</div>
               )}
             </div>
 
             {/* Preview */}
-            <div style={{ padding: '10px 14px', background: '#f8fafc', borderRadius: 8, marginBottom: 14 }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: '#64748b', margin: '0 0 6px' }}>当前批次分类预览</p>
-              <div style={{ fontSize: 13, color: '#475467' }}>
+            <div style={{ padding: '10px 14px', background: 'var(--brand-bg)', borderRadius: 8, marginBottom: 14 }}>
+              <p style={{ fontSize: 'var(--fs-caption)', fontWeight: 600, color: 'var(--text-secondary)', margin: '0 0 6px' }}>当前批次分类预览</p>
+              <div style={{ fontSize: 'var(--fs-body-sm)', color: 'var(--text-secondary)' }}>
                 {(stats.issueCategoryRanking || []).slice(0, 6).map((cat) => (
                   <span key={cat.name} style={{ marginRight: 12 }}>
                     {cat.name}: {cat.count}条 ({cat.percent}%)
@@ -199,8 +199,8 @@ export default function ClassificationPanel({ sourceId, stats, onClose, onReanal
                 ))}
               </div>
               {otherCount > 0 && stats.validAnalysisCount > 0 && (otherCount / stats.validAnalysisCount * 100) >= 20 && (
-                <p style={{ fontSize: 12, color: '#b54708', marginTop: 6 }}>
-                  ⚠ "其他"分类占比 {(otherCount / stats.validAnalysisCount * 100).toFixed(1)}%，建议优化规则
+                <p style={{ fontSize: 'var(--fs-caption)', color: 'var(--gold)', marginTop: 6 }}>
+                  "其他"分类占比 {(otherCount / stats.validAnalysisCount * 100).toFixed(1)}%，建议优化规则
                 </p>
               )}
             </div>
@@ -220,7 +220,7 @@ export default function ClassificationPanel({ sourceId, stats, onClose, onReanal
                 type="button"
                 disabled={saving}
                 onClick={() => handleSave(true)}
-                style={{ flex: 1, background: '#027a48' }}
+                style={{ flex: 1, background: 'var(--green)' }}
               >
                 {saving ? '处理中...' : '保存并重新分析'}
               </button>

@@ -28,14 +28,14 @@ export default function StatsCards({ stats, onFilterChange }) {
       sub: `有效分析 ${validCount} 条`,
       clickable: true,
       onClickType: 'totalValid',
-      accent: '#2563EB'
+      accent: 'var(--brand)'
     },
     {
       label: '归档率',
       value: `${archiveRate}%`,
       sub: `${stats.archivedCount ?? 0} 条已归档 · ${stats.unfinishedCount ?? 0} 条未完成`,
       clickable: false,
-      accent: '#10B981',
+      accent: 'var(--green)',
       warn: (stats.unfinishedCount ?? 0) > 0
     },
     {
@@ -43,7 +43,7 @@ export default function StatsCards({ stats, onFilterChange }) {
       value: passRate !== null ? `${passRate}%` : '—',
       sub: passRate !== null ? `${stats.passTotal ?? 0} 条验收` : '需时间字段数据',
       clickable: false,
-      accent: '#06B6D4'
+      accent: 'var(--teal)'
     },
     {
       label: '需求不明确',
@@ -51,7 +51,7 @@ export default function StatsCards({ stats, onFilterChange }) {
       sub: `占有效工单 ${unclearRate}%`,
       clickable: true,
       onClickType: 'unclear',
-      accent: '#F59E0B',
+      accent: 'var(--gold)',
       warn: unclearRate >= 20
     },
     {
@@ -60,7 +60,7 @@ export default function StatsCards({ stats, onFilterChange }) {
       sub: `反复调整占比 ${repeatedRate}%`,
       clickable: true,
       onClickType: 'highRisk',
-      accent: '#F43F5E',
+      accent: 'var(--red)',
       danger: highRiskCount > 0
     }
   ];
@@ -75,7 +75,7 @@ export default function StatsCards({ stats, onFilterChange }) {
           style={card.clickable ? { cursor: 'pointer' } : undefined}
         >
           <span>{card.label}</span>
-          <strong style={card.danger ? { color: '#E11D48' } : card.warn ? { color: '#D97706' } : { color: '#0F172A' }}>{card.value}</strong>
+          <strong style={card.danger ? { color: 'var(--red-dark)' } : card.warn ? { color: 'var(--gold)' } : { color: 'var(--text-primary)' }}>{card.value}</strong>
           <em>{card.sub}</em>
         </div>
       ))}

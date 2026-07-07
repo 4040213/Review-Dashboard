@@ -23,19 +23,19 @@ function buildDonutOption(title, data, subtitle = '') {
   return {
     color: palette,
     title: [
-      { text: title, left: 'center', top: 2, textStyle: { color: '#0F172A', fontSize: 15, fontWeight: 800 } },
-      { text: subtitle, left: 'center', top: 24, textStyle: { color: '#94A3B8', fontSize: 11, fontWeight: 400 } }
+      { text: title, left: 'center', top: 2, textStyle: { color: 'var(--text-primary)', fontSize: 'var(--fs-h3)', fontWeight: 800 } },
+      { text: subtitle, left: 'center', top: 24, textStyle: { color: 'var(--text-muted)', fontSize: 'var(--fs-overline)', fontWeight: 400 } }
     ],
     tooltip: {
       trigger: 'item',
       backgroundColor: 'rgba(255, 255, 255, 0.88)',
       borderColor: 'rgba(255, 255, 255, 0.75)',
       borderWidth: 1,
-      textStyle: { color: '#0F172A' },
+      textStyle: { color: 'var(--text-primary)' },
       extraCssText: 'backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-radius: 14px; box-shadow: 0 12px 32px rgba(37, 99, 235, 0.12);',
       formatter: '{b}<br/>数量：{c} 条<br/>占比：{d}%'
     },
-    legend: { type: 'scroll', orient: 'vertical', right: 4, top: 44, bottom: 10, textStyle: { color: '#64748B', fontSize: 11 } },
+    legend: { type: 'scroll', orient: 'vertical', right: 4, top: 44, bottom: 10, textStyle: { color: 'var(--text-secondary)', fontSize: 'var(--fs-overline)' } },
     series: [{
       name: title, type: 'pie',
       radius: ['48%', '72%'],
@@ -43,7 +43,7 @@ function buildDonutOption(title, data, subtitle = '') {
       data: safeData,
       label: { show: false },
       emphasis: {
-        label: { show: true, fontSize: 13, fontWeight: 'bold' },
+        label: { show: true, fontSize: 'var(--fs-body-sm)', fontWeight: 'bold' },
         itemStyle: { shadowBlur: 16, shadowOffsetX: 0, shadowColor: 'rgba(37, 99, 235, 0.2)' }
       },
       itemStyle: { borderColor: 'rgba(255,255,255,0.9)', borderWidth: 2, borderRadius: 4 }
@@ -56,24 +56,24 @@ function buildRoseOption(title, data) {
   const safeData = normalizeData(data).slice(0, 8);
   return {
     color: palette,
-    title: { text: title, left: 'center', top: 2, textStyle: { color: '#0F172A', fontSize: 15, fontWeight: 800 } },
+    title: { text: title, left: 'center', top: 2, textStyle: { color: 'var(--text-primary)', fontSize: 'var(--fs-h3)', fontWeight: 800 } },
     tooltip: {
       trigger: 'item',
       backgroundColor: 'rgba(255, 255, 255, 0.88)',
       borderColor: 'rgba(255, 255, 255, 0.75)',
       borderWidth: 1,
-      textStyle: { color: '#0F172A' },
+      textStyle: { color: 'var(--text-primary)' },
       extraCssText: 'backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-radius: 14px; box-shadow: 0 12px 32px rgba(37, 99, 235, 0.12);',
       formatter: '{b}<br/>数量：{c} 条<br/>占比：{d}%'
     },
-    legend: { top: 'bottom', textStyle: { color: '#64748B', fontSize: 11 } },
+    legend: { top: 'bottom', textStyle: { color: 'var(--text-secondary)', fontSize: 'var(--fs-overline)' } },
     series: [{
       name: title, type: 'pie',
       radius: ['20%', '68%'],
       center: ['50%', '46%'],
       roseType: 'area',
       itemStyle: { borderRadius: 8, borderColor: 'rgba(255,255,255,0.9)', borderWidth: 2 },
-      label: { color: '#475569', fontSize: 11 },
+      label: { color: 'var(--text-secondary)', fontSize: 'var(--fs-overline)' },
       data: safeData
     }]
   };
@@ -86,7 +86,7 @@ function buildHorizontalBarOption(title, data, color = chartColors.blue) {
 
   return {
     ...baseChartOption,
-    title: { text: title, left: 0, top: 0, textStyle: { color: '#0F172A', fontSize: 15, fontWeight: 800 } },
+    title: { text: title, left: 0, top: 0, textStyle: { color: 'var(--text-primary)', fontSize: 'var(--fs-h3)', fontWeight: 800 } },
     tooltip: {
       ...baseChartOption.tooltip,
       trigger: 'axis',
@@ -100,13 +100,13 @@ function buildHorizontalBarOption(title, data, color = chartColors.blue) {
     grid: { top: 40, left: 140, right: 52, bottom: 20, containLabel: true },
     xAxis: {
       type: 'value', minInterval: 1,
-      axisLabel: { color: '#94A3B8', fontSize: 11 },
+      axisLabel: { color: 'var(--text-muted)', fontSize: 'var(--fs-overline)' },
       splitLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.15)', type: 'dashed' } }
     },
     yAxis: {
       type: 'category',
       data: safeData.map((item) => item.name).reverse(),
-      axisLabel: { color: '#475569', fontSize: 12, width: 128, overflow: 'truncate' },
+      axisLabel: { color: 'var(--text-secondary)', fontSize: 'var(--fs-caption)', width: 128, overflow: 'truncate' },
       axisTick: { show: false },
       axisLine: { show: false }
     },
@@ -114,11 +114,11 @@ function buildHorizontalBarOption(title, data, color = chartColors.blue) {
       type: 'bar',
       data: safeData.map((item) => item.value).reverse(),
       barMaxWidth: 22,
-      label: { show: true, position: 'right', color: '#475569', fontWeight: 700, fontSize: 12 },
+      label: { show: true, position: 'right', color: 'var(--text-secondary)', fontWeight: 700, fontSize: 'var(--fs-caption)' },
       itemStyle: { color, borderRadius: [0, 8, 8, 0] },
       emphasis: {
         itemStyle: { color, shadowBlur: 12, shadowColor: color + '40' },
-        label: { fontSize: 13 }
+        label: { fontSize: 'var(--fs-body-sm)' }
       }
     }]
   };
@@ -133,7 +133,7 @@ function buildAreaOption(title, data, color = chartColors.cyan) {
 
   return {
     ...baseChartOption,
-    title: { text: title, left: 0, top: 0, textStyle: { color: '#0F172A', fontSize: 15, fontWeight: 800 } },
+    title: { text: title, left: 0, top: 0, textStyle: { color: 'var(--text-primary)', fontSize: 'var(--fs-h3)', fontWeight: 800 } },
     tooltip: {
       ...baseChartOption.tooltip,
       trigger: 'axis',
@@ -146,13 +146,13 @@ function buildAreaOption(title, data, color = chartColors.cyan) {
     xAxis: {
       type: 'category',
       data: sorted.map((item) => item.name),
-      axisLabel: { color: '#94A3B8', fontSize: 11, rotate: sorted.length > 12 ? 45 : 0 },
+      axisLabel: { color: 'var(--text-muted)', fontSize: 'var(--fs-overline)', rotate: sorted.length > 12 ? 45 : 0 },
       axisTick: { show: false },
       axisLine: { lineStyle: { color: 'rgba(148,163,184,0.2)' } }
     },
     yAxis: {
       type: 'value', minInterval: 1,
-      axisLabel: { color: '#94A3B8', fontSize: 11 },
+      axisLabel: { color: 'var(--text-muted)', fontSize: 'var(--fs-overline)' },
       splitLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.15)', type: 'dashed' } }
     },
     series: [{
@@ -187,7 +187,7 @@ function buildBarOption(title, data, color = chartColors.purple) {
 
   return {
     ...baseChartOption,
-    title: { text: title, left: 0, top: 0, textStyle: { color: '#0F172A', fontSize: 15, fontWeight: 800 } },
+    title: { text: title, left: 0, top: 0, textStyle: { color: 'var(--text-primary)', fontSize: 'var(--fs-h3)', fontWeight: 800 } },
     tooltip: {
       ...baseChartOption.tooltip,
       trigger: 'axis',
@@ -202,13 +202,13 @@ function buildBarOption(title, data, color = chartColors.purple) {
     xAxis: {
       type: 'category',
       data: safeData.map((item) => item.name),
-      axisLabel: { color: '#94A3B8', fontSize: 11, interval: 0, rotate: safeData.length > 6 ? 30 : 0 },
+      axisLabel: { color: 'var(--text-muted)', fontSize: 'var(--fs-overline)', interval: 0, rotate: safeData.length > 6 ? 30 : 0 },
       axisTick: { show: false },
       axisLine: { lineStyle: { color: 'rgba(148,163,184,0.2)' } }
     },
     yAxis: {
       type: 'value', minInterval: 1,
-      axisLabel: { color: '#94A3B8', fontSize: 11 },
+      axisLabel: { color: 'var(--text-muted)', fontSize: 'var(--fs-overline)' },
       splitLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.15)', type: 'dashed' } }
     },
     series: [{
@@ -222,10 +222,10 @@ function buildBarOption(title, data, color = chartColors.purple) {
       })),
       barMaxWidth: 36,
       barGap: '30%',
-      label: { show: true, position: 'top', color: '#475569', fontWeight: 700, fontSize: 12 },
+      label: { show: true, position: 'top', color: 'var(--text-secondary)', fontWeight: 700, fontSize: 'var(--fs-caption)' },
       emphasis: {
         itemStyle: { color, shadowBlur: 14, shadowColor: color + '40' },
-        label: { fontSize: 13 }
+        label: { fontSize: 'var(--fs-body-sm)' }
       }
     }]
   };

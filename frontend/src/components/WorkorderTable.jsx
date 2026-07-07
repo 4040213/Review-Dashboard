@@ -68,10 +68,10 @@ const invalidTypeColumn = {
   cell: ({ getValue }) => {
     const type = getValue();
     const labels = {
-      collaboration_placeholder: '📄 协作占位',
-      test_data: '🧪 测试数据',
-      blank: '📭 空白/无效',
-      incomplete: '⚠️ 信息不完整'
+      collaboration_placeholder: '协作占位',
+      test_data: '测试数据',
+      blank: '空白/无效',
+      incomplete: '信息不完整'
     };
     return labels[type] || '-';
   }

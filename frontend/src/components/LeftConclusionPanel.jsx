@@ -95,7 +95,7 @@ export default function LeftConclusionPanel({ stats, onFilterChange, activeFilte
               <div
                 key={group}
                 className="status-segment"
-                style={{ width: `${pct}%`, backgroundColor: statusColors[group] || '#cbd5e1' }}
+                style={{ width: `${pct}%`, backgroundColor: statusColors[group] || '#D0C8C6' }}
                 title={`${group}: ${count} 条 (${Math.round(pct)}%)`}
                 onClick={() => handleStatusGroupClick(group)}
               />
@@ -109,7 +109,7 @@ export default function LeftConclusionPanel({ stats, onFilterChange, activeFilte
               className={`legend-item ${activeSection === 'status' && activeItemKey === group ? 'active' : ''}`}
               onClick={() => handleStatusGroupClick(group)}
             >
-              <span className="legend-dot" style={{ backgroundColor: statusColors[group] || '#cbd5e1' }} />
+              <span className="legend-dot" style={{ backgroundColor: statusColors[group] || '#D0C8C6' }} />
               {group} {groupMap.get(group)?.count || 0}
             </span>
           ))}
@@ -118,7 +118,7 @@ export default function LeftConclusionPanel({ stats, onFilterChange, activeFilte
 
       {/* High-Frequency Error Top 5 — Carousel */}
       {stats.classificationWarning && (
-        <div className="warning-note" style={{ fontSize: 12, padding: '6px 10px', marginBottom: 4 }}>{stats.classificationWarning}</div>
+        <div className="warning-note" style={{ fontSize: 'var(--fs-caption)', padding: '6px 10px', marginBottom: 4 }}>{stats.classificationWarning}</div>
       )}
 
       <CarouselSection
@@ -177,7 +177,7 @@ export default function LeftConclusionPanel({ stats, onFilterChange, activeFilte
                   onClick={() => handleUnclearReasonClick(item)}
                   style={{ minHeight: 140 }}
                 >
-                  <span className="card-rank" style={{ fontSize: 16 }}>不明确</span>
+                  <span className="card-rank" style={{ fontSize: 'var(--fs-h2)' }}>不明确</span>
                   <span className="card-title">{item.reason || item.name}</span>
                   <div className="card-stats">
                     <span className="card-count">{item.count}</span>
@@ -196,10 +196,10 @@ export default function LeftConclusionPanel({ stats, onFilterChange, activeFilte
                 onClick={() => handleClick('rework', item)}
                 style={{ minHeight: 140, borderColor: 'rgba(217,45,32,0.2)' }}
               >
-                <span className="card-rank" style={{ fontSize: 16, background: 'linear-gradient(135deg, #d92d20, #f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>反复调整</span>
+                <span className="card-rank" style={{ fontSize: 'var(--fs-h2)', background: 'linear-gradient(135deg, var(--brand), var(--gold))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>反复调整</span>
                 <span className="card-title">{item.name}</span>
                 <div className="card-stats">
-                  <span className="card-count" style={{ color: '#d92d20' }}>{item.count}</span>
+                  <span className="card-count" style={{ color: 'var(--brand)' }}>{item.count}</span>
                   <span className="card-percent">条 / 占比 {item.percent}%</span>
                 </div>
                 <div className="card-example">代表案例：{getExampleText(item)}</div>
@@ -213,7 +213,7 @@ export default function LeftConclusionPanel({ stats, onFilterChange, activeFilte
       {errorTop5.length === 0 && unclearTop3.length === 0 && reworkTop.length === 0 && (
         <section className="conclusion-section">
           <div className="section-title danger-indicator">高频出错内容 Top5</div>
-          <div className="empty-state small-empty" style={{ padding: 16, fontSize: 13 }}>暂无高频出错内容</div>
+          <div className="empty-state small-empty" style={{ padding: 16, fontSize: 'var(--fs-body-sm)' }}>暂无高频出错内容</div>
         </section>
       )}
 
@@ -245,7 +245,7 @@ export default function LeftConclusionPanel({ stats, onFilterChange, activeFilte
             {suggestions.map((s, i) => <li key={i}>{s}</li>)}
           </ul>
         ) : (
-          <div className="empty-state small-empty" style={{ padding: 16, fontSize: 13 }}>暂无明显风险建议</div>
+          <div className="empty-state small-empty" style={{ padding: 16, fontSize: 'var(--fs-body-sm)' }}>暂无明显风险建议</div>
         )}
       </section>
     </div>

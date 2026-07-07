@@ -21,7 +21,7 @@ function buildStatusOption(stats) {
       backgroundColor: 'rgba(255, 255, 255, 0.88)',
       borderColor: 'rgba(255, 255, 255, 0.75)',
       borderWidth: 1,
-      textStyle: { color: '#0F172A' },
+      textStyle: { color: 'var(--text-primary)' },
       extraCssText: 'backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-radius: 14px; box-shadow: 0 12px 32px rgba(37, 99, 235, 0.12);',
       formatter: ({ seriesName, value, color }) => `<span style="display:inline-block;margin-right:6px;border-radius:50%;width:8px;height:8px;background:${color}"></span>${seriesName}<br/>${value} 条，占比 ${getPercent(groupMap, seriesName)}%`
     },

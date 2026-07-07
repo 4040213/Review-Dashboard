@@ -26,14 +26,14 @@ function buildTrendOption(timeTrend = []) {
     xAxis: {
       type: 'category',
       data: dates,
-      axisLabel: { color: '#64748B', rotate: dates.length > 12 ? 45 : 0, fontSize: 11 },
+      axisLabel: { color: 'var(--text-secondary)', rotate: dates.length > 12 ? 45 : 0, fontSize: 'var(--fs-overline)' },
       axisTick: { show: false }
     },
     yAxis: {
       type: 'value',
       minInterval: 1,
-      axisLabel: { color: '#64748B' },
-      splitLine: { lineStyle: { color: '#E2E8F0' } }
+      axisLabel: { color: 'var(--text-secondary)' },
+      splitLine: { lineStyle: { color: '#E8E0DE' } }
     },
     series: [
       { name: '总工单', type: 'line', data: totalData, smooth: true, symbol: 'circle', symbolSize: 4, lineStyle: { width: 2.5, color: chartColors.blue }, itemStyle: { color: chartColors.blue }, areaStyle: { color: 'rgba(40, 120, 255, 0.06)' } },

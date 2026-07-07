@@ -14,7 +14,7 @@ export default function ErrorDetailModal({ item, onClose, onViewExample }) {
         <div className="detail-modal-header">
           <div>
             <h2>{item.name}</h2>
-            <p style={{ margin: '4px 0 0', color: '#64748B', fontSize: 13 }}>
+            <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: 'var(--fs-body-sm)' }}>
               共 {item.count} 条 · 占比 {item.percent}%
             </p>
           </div>
@@ -68,7 +68,7 @@ export default function ErrorDetailModal({ item, onClose, onViewExample }) {
                     <p className="case-description" style={{ minHeight: 0, margin: '8px 0 0' }}>
                       {example.description || '未填写问题描述'}
                     </p>
-                    <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 6 }}>
+                    <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)', marginTop: 6 }}>
                       关键词：{formatList(example.issueKeywords)}
                       {example.status ? ` · 状态：${example.status}` : ''}
                     </div>

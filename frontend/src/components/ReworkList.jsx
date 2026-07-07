@@ -31,7 +31,7 @@ export default function ReworkList({ data, workorders }) {
     <div className="panel" style={{ marginTop: 12 }}>
       <div className="section-heading" style={{ marginBottom: 16 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: 16 }}>反复修改工单</h2>
+          <h2 style={{ margin: 0, fontSize: 'var(--fs-h2)' }}>反复修改工单</h2>
           <p className="muted" style={{ margin: '4px 0 0' }}>按调整次数排序，优先关注需要多轮沟通的工单</p>
         </div>
         <span className="count-badge">{sorted.length} 条</span>
@@ -51,13 +51,13 @@ export default function ReworkList({ data, workorders }) {
           };
 
           return (
-            <article key={item.id} className="focus-card" style={{ borderLeft: '3px solid #F43F5E' }}>
+            <article key={item.id} className="focus-card" style={{ borderLeft: '3px solid var(--red)' }}>
               <div className="focus-card-top">
                 <div className="focus-tags">
                   <span className={`risk-tag risk-${item.riskLevel}`}>{item.riskLevel || '-'}</span>
                   {item.isUnclearRequirement && <span className="tag warning">需求不明确</span>}
                   {rootCause && (
-                    <span className="tag" style={{ background: 'rgba(244,63,94,0.1)', color: '#E11D48' }}>
+                    <span className="tag" style={{ background: 'rgba(222,16,32,0.08)', color: 'var(--red-dark)' }}>
                       {rootCauseLabels[rootCause] || rootCause}
                     </span>
                   )}
@@ -86,7 +86,7 @@ export default function ReworkList({ data, workorders }) {
 
               {/* Simple timeline from status timestamps */}
               {(item.submittedAt || item.resolvedAt || item.acceptedAt || item.archivedAt) && (
-                <div style={{ marginTop: 10, padding: '10px 14px', background: 'rgba(248,250,252,0.6)', borderRadius: 8, fontSize: 12, color: '#475467' }}>
+                <div style={{ marginTop: 10, padding: '10px 14px', background: 'rgba(248,250,252,0.6)', borderRadius: 8, fontSize: 'var(--fs-caption)', color: 'var(--text-secondary)' }}>
                   <span style={{ fontWeight: 600, marginRight: 8 }}>📅 时间线：</span>
                   {item.submittedAt && <span>提交 {new Date(item.submittedAt).toLocaleDateString('zh-CN')}</span>}
                   {item.resolvedAt && <span style={{ marginLeft: 8 }}>→ 解决 {new Date(item.resolvedAt).toLocaleDateString('zh-CN')}</span>}

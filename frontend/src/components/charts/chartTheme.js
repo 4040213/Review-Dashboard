@@ -1,34 +1,38 @@
+/* ═══════════════════════════════════════════════════════════════
+   Chart Color Theme — 雪球课堂品牌色
+   ═══════════════════════════════════════════════════════════════ */
+
 export const chartColors = {
-  blue: '#2563EB',
-  cyan: '#06B6D4',
-  green: '#10B981',
-  orange: '#F59E0B',
-  red: '#F43F5E',
-  purple: '#7C3AED',
-  gray: '#94A3B8',
+  blue: '#DE1020',
+  cyan: '#1A8A7A',
+  green: '#2D8A56',
+  orange: '#D47830',
+  red: '#DE1020',
+  purple: '#7B3F5C',
+  gray: '#A0908E',
   // Extended palette for multi-series charts
-  blueLight: '#60A5FA',
-  cyanLight: '#22D3EE',
-  purpleLight: '#A78BFA',
-  greenLight: '#34D399',
-  blueDark: '#1D4ED8',
-  purpleDark: '#6D28D9',
+  blueLight: '#F04050',
+  cyanLight: '#40B8A8',
+  purpleLight: '#9B5F7C',
+  greenLight: '#3BA86C',
+  blueDark: '#B80D1A',
+  purpleDark: '#5A2F44',
 };
 
 // 生产指挥舱品牌色规范
 export const cmdColors = {
-  brand: '#2B5FD7',
-  green: '#00A86B',
-  orange: '#F5A623',
-  red: '#E74C3C',
-  content: '#8E44AD',  // 内容制作 - 紫色
-  dev: '#3498DB',       // 研发修改 - 蓝色
-  media: '#2ECC71',     // 媒体资源 - 翠绿
-  other: '#95A5A6',     // 其他 - 灰色
-  bg: '#F5F7FA',
+  brand: '#DE1020',
+  green: '#2D8A56',
+  orange: '#D47830',
+  red: '#DE1020',
+  content: '#7B3F5C',  // 内容制作 - 紫褐
+  dev: '#DE1020',       // 研发修改 - 品牌红
+  media: '#1A8A7A',     // 媒体资源 - 青绿
+  other: '#A0908E',     // 其他 - 暖灰
+  bg: '#FFF9F8',
   card: '#FFFFFF',
-  text: '#2C3E50',
-  textSecondary: '#7F8C8D'
+  text: '#2A1C1E',
+  textSecondary: '#6B5A58'
 };
 
 export const statusColors = {
@@ -59,8 +63,8 @@ export const glassTooltip = {
   backgroundColor: 'rgba(255, 255, 255, 0.88)',
   borderColor: 'rgba(255, 255, 255, 0.75)',
   borderWidth: 1,
-  textStyle: { color: '#0F172A' },
-  extraCssText: 'backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-radius: 14px; box-shadow: 0 12px 32px rgba(37, 99, 235, 0.12); padding: 10px 14px;'
+  textStyle: { color: '#2A1C1E' },
+  extraCssText: 'backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-radius: 14px; box-shadow: 0 12px 32px rgba(222, 16, 32, 0.08); padding: 10px 14px;'
 };
 
 export const baseChartOption = {
@@ -69,8 +73,8 @@ export const baseChartOption = {
     backgroundColor: 'rgba(255, 255, 255, 0.88)',
     borderColor: 'rgba(255, 255, 255, 0.75)',
     borderWidth: 1,
-    textStyle: { color: '#0F172A', fontSize: 13 },
-    extraCssText: 'backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-radius: 14px; box-shadow: 0 12px 32px rgba(37, 99, 235, 0.12);'
+    textStyle: { color: '#2A1C1E', fontSize: 13 },
+    extraCssText: 'backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-radius: 14px; box-shadow: 0 12px 32px rgba(222, 16, 32, 0.08);'
   },
   grid: {
     top: 40,
@@ -81,6 +85,6 @@ export const baseChartOption = {
   },
   legend: {
     top: 0,
-    textStyle: { color: '#64748B' }
+    textStyle: { color: '#6B5A58' }
   }
 };

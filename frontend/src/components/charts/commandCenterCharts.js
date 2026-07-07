@@ -51,8 +51,8 @@ export function buildGaugeOption(value, title = 'BHI 看板健康指数') {
         }
       },
       pointer: { width: 6, length: '65%', itemStyle: { color: cmdColors.text } },
-      axisTick: { distance: -22, length: 8, lineStyle: { width: 1, color: '#999' } },
-      splitLine: { distance: -26, length: 18, lineStyle: { width: 3, color: '#999' } },
+      axisTick: { distance: -22, length: 8, lineStyle: { width: 1, color: '#A0908E' } },
+      splitLine: { distance: -26, length: 18, lineStyle: { width: 3, color: '#A0908E' } },
       axisLabel: { color: cmdColors.textSecondary, distance: 30, fontSize: 12 },
       anchor: { show: true, showAbove: true, size: 20, itemStyle: { borderWidth: 2 } },
       title: { offsetCenter: [0, '82%'], fontSize: 14, color: cmdColors.textSecondary },
@@ -83,7 +83,7 @@ export function buildDonutOption(title, data, colorMap = statusGroupV2Colors) {
       borderColor: 'rgba(255, 255, 255, 0.8)',
       borderWidth: 1,
       textStyle: { color: cmdColors.text },
-      extraCssText: 'backdrop-filter: blur(18px); border-radius: 14px; box-shadow: 0 12px 32px rgba(43,95,215,0.12);',
+      extraCssText: 'backdrop-filter: blur(18px); border-radius: 14px; box-shadow: 0 12px 32px rgba(222,16,32,0.06);',
       formatter: '{b}<br/>数量：{c} 条<br/>占比：{d}%'
     },
     legend: {
@@ -98,7 +98,7 @@ export function buildDonutOption(title, data, colorMap = statusGroupV2Colors) {
       label: { show: false },
       emphasis: {
         label: { show: true, fontSize: 13, fontWeight: 'bold' },
-        itemStyle: { shadowBlur: 16, shadowOffsetX: 0, shadowColor: 'rgba(43, 95, 215, 0.2)' }
+        itemStyle: { shadowBlur: 16, shadowOffsetX: 0, shadowColor: 'rgba(222, 16, 32, 0.1)' }
       },
       itemStyle: { borderColor: 'rgba(255,255,255,0.9)', borderWidth: 2, borderRadius: 4 }
     }]
@@ -121,7 +121,7 @@ export function buildHorizontalBarOption(title, data, color = cmdColors.brand, m
       borderColor: 'rgba(255, 255, 255, 0.8)',
       borderWidth: 1,
       textStyle: { color: cmdColors.text, fontSize: 13 },
-      extraCssText: 'backdrop-filter: blur(18px); border-radius: 14px; box-shadow: 0 12px 32px rgba(43,95,215,0.12);',
+      extraCssText: 'backdrop-filter: blur(18px); border-radius: 14px; box-shadow: 0 12px 32px rgba(222,16,32,0.06);',
       formatter: (params) => {
         const item = Array.isArray(params) ? params[0] : params;
         const dataItem = safeData.find((entry) => entry.name === item.name);
@@ -186,7 +186,7 @@ export function buildThroughputComboOption(data) {
       borderColor: 'rgba(255, 255, 255, 0.8)',
       borderWidth: 1,
       textStyle: { color: cmdColors.text, fontSize: 13 },
-      extraCssText: 'backdrop-filter: blur(18px); border-radius: 14px; box-shadow: 0 12px 32px rgba(43,95,215,0.12);'
+      extraCssText: 'backdrop-filter: blur(18px); border-radius: 14px; box-shadow: 0 12px 32px rgba(222,16,32,0.06);'
     },
     legend: { data: ['新增工单', '归档工单', '净增趋势'], top: 6, textStyle: { color: cmdColors.textSecondary, fontSize: 11 } },
     grid: { top: 60, left: 44, right: 60, bottom: 32, containLabel: true },
@@ -226,7 +226,7 @@ export function buildHeatmapOption(data, xLabels, yLabels, title = '年级×讲�
       borderColor: 'rgba(255, 255, 255, 0.8)',
       borderWidth: 1,
       textStyle: { color: cmdColors.text, fontSize: 13 },
-      extraCssText: 'backdrop-filter: blur(18px); border-radius: 14px; box-shadow: 0 12px 32px rgba(43,95,215,0.12);',
+      extraCssText: 'backdrop-filter: blur(18px); border-radius: 14px; box-shadow: 0 12px 32px rgba(222,16,32,0.06);',
       formatter: (params) => `${yLabels[params.value[1]]} - ${xLabels[params.value[0]]}<br/>工单数：<b>${params.value[2]}</b>`
     },
     grid: { top: 40, left: 100, right: 60, bottom: 60 },
@@ -245,7 +245,7 @@ export function buildHeatmapOption(data, xLabels, yLabels, title = '年级×讲�
       calculable: true,
       orient: 'vertical',
       right: 4, top: 40, bottom: 20,
-      inRange: { color: ['#F5F7FA', '#B8D4FE', '#2B5FD7', '#1E40AF'] },
+      inRange: { color: ['#FFF9F8', '#FDE8EC', 'var(--brand)', '#B80D1A'] },
       textStyle: { color: cmdColors.textSecondary }
     },
     series: [{
@@ -297,7 +297,7 @@ export function buildBoxplotOption(data, title = '各状态停留时长分布') 
         name: '分布', type: 'boxplot',
         data: boxData,
         itemStyle: { color: cmdColors.brand, borderColor: cmdColors.brand },
-        emphasis: { itemStyle: { shadowBlur: 12, shadowColor: 'rgba(43,95,215,0.3)' } }
+        emphasis: { itemStyle: { shadowBlur: 12, shadowColor: 'rgba(222,16,32,0.3)' } }
       },
       {
         name: '均值', type: 'scatter',

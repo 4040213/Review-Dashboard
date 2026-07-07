@@ -27,7 +27,7 @@ export default function PendingReviewQueue({ data, onToggleUrgent }) {
   if (!items.length) {
     return (
       <div className="panel" style={{ marginTop: 12 }}>
-        <div className="empty-state small-empty">暂无待验收工单 🎉</div>
+        <div className="empty-state small-empty">暂无待验收工单</div>
       </div>
     );
   }
@@ -51,10 +51,10 @@ export default function PendingReviewQueue({ data, onToggleUrgent }) {
     <div className="panel" style={{ marginTop: 12 }}>
       <div className="section-heading" style={{ marginBottom: 16 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: 16 }}>待教研验收队列</h2>
+          <h2 style={{ margin: 0, fontSize: 'var(--fs-h2)' }}>待教研验收队列</h2>
           <p className="muted" style={{ margin: '4px 0 0' }}>
-            ⏱ 平均等待 {avgWaitDays.toFixed(1)} 天
-            {over7Count > 0 && <span style={{ color: '#F43F5E', marginLeft: 12 }}>🚨 积压超 7 天：{over7Count} 条</span>}
+            平均等待 {avgWaitDays.toFixed(1)} 天
+            {over7Count > 0 && <span style={{ color: 'var(--red)', marginLeft: 12 }}>积压超 7 天：{over7Count} 条</span>}
           </p>
         </div>
       </div>
@@ -67,10 +67,10 @@ export default function PendingReviewQueue({ data, onToggleUrgent }) {
             style={{
               padding: '6px 16px',
               borderRadius: 999,
-              border: `1.5px solid ${sortBy === opt.key ? '#2563EB' : 'rgba(148,163,184,0.2)'}`,
-              background: sortBy === opt.key ? 'rgba(37,99,235,0.08)' : 'rgba(255,255,255,0.6)',
-              color: sortBy === opt.key ? '#2563EB' : '#64748B',
-              fontSize: 13,
+              border: `1.5px solid ${sortBy === opt.key ? 'var(--brand)' : 'rgba(148,163,184,0.2)'}`,
+              background: sortBy === opt.key ? 'rgba(222,16,32,0.08)' : 'rgba(255,255,255,0.6)',
+              color: sortBy === opt.key ? 'var(--brand)' : 'var(--text-secondary)',
+              fontSize: 'var(--fs-body-sm)',
               fontWeight: sortBy === opt.key ? 600 : 400,
               cursor: 'pointer',
               backdropFilter: 'blur(12px)',
@@ -109,25 +109,25 @@ export default function PendingReviewQueue({ data, onToggleUrgent }) {
                 <div style={{
                   fontSize: 22,
                   fontWeight: 800,
-                  color: isOverdue ? '#F43F5E' : '#2563EB',
+                  color: isOverdue ? 'var(--red)' : 'var(--brand)',
                   lineHeight: 1.1
                 }}>
                   {waitDays !== null ? waitDays : '?'}
                 </div>
-                <div style={{ fontSize: 11, color: '#94a3b8' }}>天</div>
+                <div style={{ fontSize: 'var(--fs-overline)', color: 'var(--text-muted)' }}>天</div>
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 6 }}>
-                  <span className={`risk-tag risk-${item.riskLevel}`} style={{ fontSize: 11 }}>{item.riskLevel || '-'}风险</span>
-                  <span style={{ fontSize: 12, color: '#94A3B8' }}>{item.grade || '-'} / {item.week || '-'}</span>
-                  {isOverdue && <span style={{ fontSize: 11, background: 'rgba(244,63,94,0.1)', color: '#F43F5E', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>⚠ 超期</span>}
-                  {isUrgent && <span style={{ fontSize: 11, background: '#F43F5E', color: '#fff', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>紧急</span>}
+                  <span className={`risk-tag risk-${item.riskLevel}`} style={{ fontSize: 'var(--fs-overline)' }}>{item.riskLevel || '-'}风险</span>
+                  <span style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)' }}>{item.grade || '-'} / {item.week || '-'}</span>
+                  {isOverdue && <span style={{ fontSize: 'var(--fs-overline)', background: 'rgba(244,63,94,0.1)', color: 'var(--red)', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>⚠ 超期</span>}
+                  {isUrgent && <span style={{ fontSize: 'var(--fs-overline)', background: 'var(--red)', color: '#fff', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>紧急</span>}
                 </div>
-                <p style={{ margin: 0, fontSize: 14, color: '#0F172A', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <p style={{ margin: 0, fontSize: 'var(--fs-body)', color: 'var(--text-primary)', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {item.description || '未填写问题描述'}
                 </p>
-                <div style={{ fontSize: 12, color: '#64748B', marginTop: 4, display: 'flex', gap: 16, flexWrap: 'wrap', minWidth: 0 }}>
+                <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-secondary)', marginTop: 4, display: 'flex', gap: 16, flexWrap: 'wrap', minWidth: 0 }}>
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>负责人：{item.owner || '-'}</span>
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>提交：{item.submittedAt ? new Date(item.submittedAt).toLocaleDateString('zh-CN') : '-'}</span>
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>更新：{item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('zh-CN') : '-'}</span>
@@ -143,14 +143,14 @@ export default function PendingReviewQueue({ data, onToggleUrgent }) {
                     style={{
                       padding: '7px 14px',
                       borderRadius: 999,
-                      background: 'linear-gradient(135deg, #2563EB, #3B82F6)',
+                      background: 'var(--brand-gradient)',
                       color: '#fff',
-                      fontSize: 12,
+                      fontSize: 'var(--fs-caption)',
                       fontWeight: 600,
                       textDecoration: 'none',
                       textAlign: 'center',
                       whiteSpace: 'nowrap',
-                      boxShadow: '0 6px 16px rgba(37, 99, 235, 0.25)'
+                      boxShadow: '0 6px 16px rgba(222, 16, 32, 0.25)'
                     }}
                   >
                     开始验收 →
@@ -163,8 +163,8 @@ export default function PendingReviewQueue({ data, onToggleUrgent }) {
                     borderRadius: 999,
                     border: '1px solid rgba(148,163,184,0.2)',
                     background: item.isUrgent ? 'rgba(244,63,94,0.1)' : 'rgba(255,255,255,0.6)',
-                    color: item.isUrgent ? '#E11D48' : '#64748B',
-                    fontSize: 11,
+                    color: item.isUrgent ? 'var(--red-dark)' : 'var(--text-secondary)',
+                    fontSize: 'var(--fs-overline)',
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
                     fontWeight: 600,

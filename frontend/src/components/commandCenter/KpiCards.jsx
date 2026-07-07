@@ -29,7 +29,7 @@ export default function KpiCards({ kpis }) {
     {
       label: '完成率',
       value: `${kpis.completionRate ?? 0}%`,
-      sub: kpis.completionRate >= 85 ? '✅ 状态良好' : kpis.completionRate >= 70 ? '⚠️ 需关注' : '🔴 需改进',
+      sub: kpis.completionRate >= 85 ? '状态良好' : kpis.completionRate >= 70 ? '需关注' : '需改进',
       color: cmdColors.green,
       warn: kpis.completionRate < 85,
       danger: kpis.completionRate < 70
@@ -37,7 +37,7 @@ export default function KpiCards({ kpis }) {
     {
       label: '待关闭工单',
       value: kpis.unclosedCount ?? 0,
-      sub: kpis.unclosedCount > 30 ? '⚠️ 积压偏高' : '正常范围',
+      sub: kpis.unclosedCount > 30 ? '积压偏高' : '正常范围',
       color: cmdColors.orange,
       warn: (kpis.unclosedCount ?? 0) > 20,
       danger: (kpis.unclosedCount ?? 0) > 30
@@ -45,14 +45,14 @@ export default function KpiCards({ kpis }) {
     {
       label: '阻塞工单',
       value: kpis.blockedCount ?? 0,
-      sub: (kpis.blockedCount ?? 0) > 0 ? '🔴 需要立即处理' : '✅ 无阻塞',
+      sub: (kpis.blockedCount ?? 0) > 0 ? '需要立即处理' : '无阻塞',
       color: cmdColors.red,
       danger: (kpis.blockedCount ?? 0) > 0
     },
     {
       label: '高龄工单(>5天)',
       value: kpis.agingCount ?? 0,
-      sub: (kpis.agingCount ?? 0) > 10 ? '🔴 严重积压' : (kpis.agingCount ?? 0) > 5 ? '⚠️ 需关注' : '✅ 正常',
+      sub: (kpis.agingCount ?? 0) > 10 ? '严重积压' : (kpis.agingCount ?? 0) > 5 ? '需关注' : '正常',
       color: cmdColors.red,
       warn: (kpis.agingCount ?? 0) > 5,
       danger: (kpis.agingCount ?? 0) > 10
