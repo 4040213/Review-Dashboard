@@ -38,10 +38,13 @@ export function getStats(sourceId) {
   return request(withSource('/workorders/stats', sourceId));
 }
 
-export function syncFeishu(sourceId) {
+export function syncFeishu(sourceId, options = {}) {
+  const body = { sourceId };
+  if (options.bitableUrl) body.bitableUrl = options.bitableUrl;
+  if (options.tableId) body.tableId = options.tableId;
   return request('/feishu/sync', {
     method: 'POST',
-    body: JSON.stringify({ sourceId }),
+    body: JSON.stringify(body),
     headers: { 'Content-Type': 'application/json' }
   });
 }
@@ -137,4 +140,20 @@ export function getCommandBhi(sourceId) {
 
 export function getCommandAll(sourceId) {
   return request(withSource('/command-center/all', sourceId));
+}
+
+// ── 飞书评论相关 API ──
+
+export function syncFeishuComments(probe = false, options = {}) {
+  const body = probe ? { probe: true } : {};
+  if (options.bitableUrl) body.bitableUrl = options.bitableUrl;
+  return request('/sync/comments', {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+export function getTicketComments(recordId) {
+  return request(`/tickets/${encodeURIComponent(recordId)}/comments`);
 }

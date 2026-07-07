@@ -1,6 +1,6 @@
 import express from 'express';
 import { dataSources, defaultSourceId } from '../config/dataSources.js';
-import { getAllWorkorders } from '../db/database.js';
+import { getAllWorkorders, getCommentStatsForRecords } from '../db/database.js';
 import { buildStats } from '../services/analyzer.js';
 
 const router = express.Router();
@@ -9,12 +9,39 @@ function getSourceId(req) {
   return req.query.sourceId || defaultSourceId;
 }
 
+// 给工单列表附加评论统计
+async function attachCommentStats(workorders) {
+  if (!workorders || workorders.length === 0) return workorders;
+
+  const recordIds = workorders.map((w) => w.sourceRecordId).filter(Boolean);
+  if (recordIds.length === 0) return workorders;
+
+  const commentStats = await getCommentStatsForRecords([...new Set(recordIds)]);
+
+  return workorders.map((w) => {
+    const stats = commentStats[w.sourceRecordId] || {
+      comment_count: 0,
+      latest_comment_content: '',
+      latest_comment_author: '',
+      latest_comment_time: ''
+    };
+    return {
+      ...w,
+      comment_count: stats.comment_count || 0,
+      latest_comment_content: stats.latest_comment_content || '',
+      latest_comment_author: stats.latest_comment_author || '',
+      latest_comment_time: stats.latest_comment_time || ''
+    };
+  });
+}
+
 router.get('/sources', (_req, res) => {
   res.json({ defaultSourceId, sources: dataSources.map(({ id, name, provider }) => ({ id, name, provider })) });
 });
 
 router.get('/', async (req, res) => {
-  res.json({ workorders: await getAllWorkorders(getSourceId(req)) });
+  const workorders = await getAllWorkorders(getSourceId(req));
+  res.json({ workorders: await attachCommentStats(workorders) });
 });
 
 router.get('/stats', async (req, res) => {

@@ -7,6 +7,7 @@ function formatArray(values) {
 export default function AutoScrollWorkorders({
   workorders = [],
   onCardClick,
+  onCommentClick,
   autoPlay = true,
   scrollSpeed = 3500,    // ms per row scroll
   maxItems = 20
@@ -152,6 +153,43 @@ export default function AutoScrollWorkorders({
                     <p><b>风险原因：</b>{formatArray(item.riskReasons)}</p>
                     <p><b>处理建议：</b>{formatArray(item.suggestions)}</p>
                   </div>
+
+                  {/* ── 评论信息 ── */}
+                  {item.comment_count > 0 ? (
+                    <div
+                      className="focus-comment-bar"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCommentClick?.(item);
+                      }}
+                      title="点击查看评论详情"
+                    >
+                      <span className="comment-bar-icon">💬</span>
+                      <span className="comment-bar-count">{item.comment_count} 条评论</span>
+                      {item.latest_comment_content && (
+                        <span className="comment-bar-preview">
+                          最新：{item.latest_comment_content.substring(0, 30)}{item.latest_comment_content.length > 30 ? '...' : ''}
+                        </span>
+                      )}
+                      {item.latest_comment_author && (
+                        <span className="comment-bar-author">{item.latest_comment_author}</span>
+                      )}
+                      {item.latest_comment_time && (
+                        <span className="comment-bar-time">
+                          {(() => {
+                            try {
+                              return new Date(item.latest_comment_time).toLocaleString('zh-CN');
+                            } catch { return ''; }
+                          })()}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="focus-comment-bar empty" style={{ opacity: 0.5 }}>
+                      <span className="comment-bar-icon">💬</span>
+                      <span className="comment-bar-count">暂无评论</span>
+                    </div>
+                  )}
 
                   <div className="card-click-hint">
                     点击查看详情 →

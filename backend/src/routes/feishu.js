@@ -52,7 +52,12 @@ router.post('/sync', async (req, res) => {
       });
     }
 
-    const { source, workorders: parsedWorkorders } = await fetchFeishuWorkorders(sourceId);
+    // 支持前端传入自定义 bitable URL / table ID
+    const overrides = {};
+    if (req.body?.bitableUrl) overrides.bitableUrl = req.body.bitableUrl;
+    if (req.body?.tableId) overrides.tableId = req.body.tableId;
+
+    const { source, workorders: parsedWorkorders } = await fetchFeishuWorkorders(sourceId, overrides);
     const workorders = analyzeWorkorders(parsedWorkorders);
     await replaceWorkorders(workorders, source);
 

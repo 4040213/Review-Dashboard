@@ -86,6 +86,36 @@ export async function initDatabase() {
     ['isUrgent', 'INTEGER DEFAULT 0']
   ].forEach(([name, definition]) => ensureColumn(name, definition));
 
+  // ── 评论表（飞书多维表格评论）──
+  db.run(`
+    CREATE TABLE IF NOT EXISTS ticket_comments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      feishu_comment_id TEXT NOT NULL,
+      feishu_reply_id TEXT DEFAULT '',
+      feishu_record_id TEXT NOT NULL DEFAULT '',
+      feishu_table_id TEXT DEFAULT '',
+      feishu_view_id TEXT DEFAULT '',
+      content TEXT DEFAULT '',
+      author_name TEXT DEFAULT '',
+      author_id TEXT DEFAULT '',
+      create_time TEXT DEFAULT '',
+      update_time TEXT DEFAULT '',
+      is_solved INTEGER DEFAULT 0,
+      raw_json TEXT DEFAULT '',
+      synced_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Ensure unique constraint on comment_id + reply_id
+  try {
+    db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_comment_reply ON ticket_comments(feishu_comment_id, feishu_reply_id)');
+  } catch (_) { /* index may already exist */ }
+
+  // Ensure index on record_id for query performance
+  try {
+    db.run('CREATE INDEX IF NOT EXISTS idx_comments_record ON ticket_comments(feishu_record_id)');
+  } catch (_) { /* index may already exist */ }
+
   saveDatabase();
   return db;
 }
@@ -237,6 +267,140 @@ export async function getWorkorderCount(sourceId = defaultSourceId) {
   await initDatabase();
   const result = db.exec('SELECT COUNT(*) AS count FROM workorders WHERE COALESCE(sourceId, ?) = ?', [sourceId, sourceId]);
   return result[0]?.values?.[0]?.[0] ?? 0;
+}
+
+// ── 评论相关数据库操作 ──
+
+export async function insertComments(comments) {
+  await initDatabase();
+  if (!comments || comments.length === 0) return { saved: 0, skipped: 0 };
+
+  // Count rows before insert to calculate actual inserted count
+  let beforeCount = 0;
+  const countBefore = db.exec('SELECT COUNT(*) as cnt FROM ticket_comments');
+  if (countBefore.length > 0) {
+    beforeCount = countBefore[0]?.values?.[0]?.[0] || 0;
+  }
+
+  db.run('BEGIN TRANSACTION');
+  try {
+    const stmt = db.prepare(`
+      INSERT OR IGNORE INTO ticket_comments
+        (feishu_comment_id, feishu_reply_id, feishu_record_id, feishu_table_id, feishu_view_id,
+         content, author_name, author_id, create_time, update_time, is_solved, raw_json, synced_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const now = new Date().toISOString();
+    for (const c of comments) {
+      stmt.run([
+        c.feishu_comment_id || '',
+        c.feishu_reply_id || '',
+        c.feishu_record_id || '',
+        c.feishu_table_id || '',
+        c.feishu_view_id || '',
+        c.content || '',
+        c.author_name || '',
+        c.author_id || '',
+        c.create_time || '',
+        c.update_time || '',
+        c.is_solved ? 1 : 0,
+        c.raw_json || '',
+        now
+      ]);
+    }
+
+    stmt.free();
+    db.run('COMMIT');
+    saveDatabase();
+
+    // Count rows after insert to calculate actual inserted count
+    let afterCount = 0;
+    const countAfter = db.exec('SELECT COUNT(*) as cnt FROM ticket_comments');
+    if (countAfter.length > 0) {
+      afterCount = countAfter[0]?.values?.[0]?.[0] || 0;
+    }
+
+    const saved = Math.max(0, afterCount - beforeCount);
+    const skipped = comments.length - saved;
+
+    return { saved, skipped };
+  } catch (error) {
+    db.run('ROLLBACK');
+    console.error(`[database] Comment insert failed: ${error.message}`);
+    throw error;
+  }
+}
+
+export async function getCommentsByRecordId(feishuRecordId) {
+  await initDatabase();
+  const result = db.exec(
+    `SELECT feishu_comment_id, feishu_reply_id, feishu_record_id, feishu_table_id, feishu_view_id,
+            content, author_name, author_id, create_time, update_time, is_solved
+     FROM ticket_comments
+     WHERE feishu_record_id = ?
+     ORDER BY create_time ASC`,
+    [feishuRecordId]
+  );
+  if (result.length === 0) return [];
+
+  const { columns, values } = result[0];
+  return values.map((row) => {
+    const item = Object.fromEntries(columns.map((col, i) => [col, row[i]]));
+    return {
+      ...item,
+      is_solved: Boolean(item.is_solved)
+    };
+  });
+}
+
+export async function getCommentStatsForRecords(recordIds) {
+  await initDatabase();
+  if (!recordIds || recordIds.length === 0) return {};
+
+  // Build a map: recordId -> { comment_count, latest_comment_content, latest_comment_author, latest_comment_time }
+  const stats = {};
+  for (const rid of recordIds) {
+    stats[rid] = { comment_count: 0, latest_comment_content: '', latest_comment_author: '', latest_comment_time: '' };
+  }
+
+  try {
+    // Fetch all comments for the given record IDs in one query
+    const placeholders = recordIds.map(() => '?').join(', ');
+    const result = db.exec(
+      `SELECT feishu_record_id, content, author_name, create_time
+       FROM ticket_comments
+       WHERE feishu_record_id IN (${placeholders})
+       ORDER BY feishu_record_id, create_time ASC`,
+      recordIds
+    );
+
+    if (result.length > 0) {
+      const { columns, values } = result[0];
+      // Group by record_id in JavaScript (simpler and more reliable)
+      const grouped = {};
+      for (const row of values) {
+        const item = Object.fromEntries(columns.map((col, i) => [col, row[i]]));
+        const rid = item.feishu_record_id;
+        if (!grouped[rid]) grouped[rid] = [];
+        grouped[rid].push(item);
+      }
+
+      // Compute stats per record
+      for (const [rid, comments] of Object.entries(grouped)) {
+        if (!stats[rid]) continue;
+        stats[rid].comment_count = comments.length;
+        const latest = comments[comments.length - 1]; // Last after ASC sort
+        stats[rid].latest_comment_content = latest.content || '';
+        stats[rid].latest_comment_author = latest.author_name || '';
+        stats[rid].latest_comment_time = latest.create_time || '';
+      }
+    }
+  } catch (err) {
+    console.warn(`[database] Failed to get comment stats: ${err.message}`);
+  }
+
+  return stats;
 }
 
 export function getDatabasePath() {

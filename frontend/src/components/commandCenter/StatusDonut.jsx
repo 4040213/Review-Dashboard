@@ -18,7 +18,7 @@ export default function StatusDonut({ statusGroupV2, statusDetail, onDrillDown }
 
   return (
     <div className="cc-chart-card">
-      <ReactECharts option={donutOption} style={{ height: 300 }} onEvents={onEvents} />
+      <ReactECharts option={donutOption} style={{ height: 240 }} onEvents={onEvents} />
       {/* Drill-down detail: show specific statuses */}
       {statusDetail && statusDetail.length > 0 && (
         <div className="cc-status-detail">

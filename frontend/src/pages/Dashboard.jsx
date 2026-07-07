@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getFeishuStatus, getHealth, getSources, getStats, getWorkorders, syncFeishu, getCommandAll } from '../api/workorders.js';
+import { getFeishuStatus, getHealth, getSources, getStats, getWorkorders, syncFeishu, syncFeishuComments, getCommandAll } from '../api/workorders.js';
 import Charts from '../components/Charts.jsx';
 import ClassificationPanel from '../components/ClassificationPanel.jsx';
 import DataSourceBar from '../components/DataSourceBar.jsx';
@@ -16,6 +16,7 @@ import ForecastTab from '../components/commandCenter/ForecastTab.jsx';
 import { downloadReviewReport } from '../utils/report.js';
 import Sidebar from '../components/Sidebar.jsx';
 import UserProfile from '../components/UserProfile.jsx';
+import CommentDrawer from '../components/CommentDrawer.jsx';
 import { Icon } from '@iconify/react';
 
 const emptyStats = {
@@ -84,6 +85,12 @@ export default function Dashboard() {
   const [detailWorkorder, setDetailWorkorder] = useState(null);
   const [errorDetail, setErrorDetail] = useState(null);
 
+  // Comment state
+  const [commentWorkorder, setCommentWorkorder] = useState(null);
+  const [syncingComments, setSyncingComments] = useState(false);
+  const [commentSyncMessage, setCommentSyncMessage] = useState('');
+  const [customTableUrl, setCustomTableUrl] = useState('');
+
   // ── 生产指挥舱状态 ──
   const [activeCommandTab, setActiveCommandTab] = useState('overview');
   const [commandData, setCommandData] = useState(null);
@@ -136,19 +143,56 @@ export default function Dashboard() {
     if (sourceId) loadCommandData(sourceId);
   }
 
-  async function handleManualSync() {
+  async function handleManualSync(customBitableUrl) {
     if (!sourceId) return;
     setSyncing(true);
     setSyncMessage('');
     try {
-      const result = await syncFeishu(sourceId);
+      if (customBitableUrl) setCustomTableUrl(customBitableUrl);
+      const options = {};
+      if (customBitableUrl) {
+        options.bitableUrl = customBitableUrl;
+        const tableMatch = String(customBitableUrl).match(/[?&]table=([^&#]+)/);
+        if (tableMatch) options.tableId = tableMatch[1];
+      }
+      const result = await syncFeishu(sourceId, options);
       applySyncResult(result);
-      setSyncMessage(`同步成功：${result.message || '已同步最新数据'}`);
+      await loadCommandData(sourceId);
+      const tableInfo = customBitableUrl ? '（自定义表格）' : '';
+      setSyncMessage(`同步成功${tableInfo}：共 ${result.count || 0} 条工单`);
     } catch (error) {
       const message = error.message || '飞书同步失败';
       setSyncMessage(`同步失败：${message}`);
     } finally {
       setSyncing(false);
+    }
+  }
+
+  async function handleSyncComments() {
+    setSyncingComments(true);
+    setCommentSyncMessage('');
+    try {
+      const options = {};
+      if (customTableUrl) options.bitableUrl = customTableUrl;
+      const result = await syncFeishuComments(false, options);
+      const msg = result.savedCommentCount !== undefined
+        ? `评论同步成功！共 ${result.rawCommentCount} 条评论，保存 ${result.savedCommentCount} 条`
+        : `评论同步成功：${result.message || '已完成'}`;
+      setCommentSyncMessage(msg);
+      await loadDashboardData(sourceId);
+    } catch (error) {
+      let message = error.message || '评论同步失败';
+      try {
+        const body = JSON.parse(error.message);
+        if (body?.permissionHint) {
+          message = `${body.message || '权限不足'}\n${body.permissionHint.summary}\n需要权限: ${body.permissionHint.requiredScope}`;
+        }
+        // eslint-disable-next-line no-empty
+      } catch {}
+      setCommentSyncMessage(`❌ ${message}`);
+      console.error('评论同步详细错误:', error);
+    } finally {
+      setSyncingComments(false);
     }
   }
 
@@ -270,6 +314,13 @@ export default function Dashboard() {
         const score = (item) => (item.isRepeatedAdjustmentCandidate ? 40 : 0) + (riskScore[item.riskLevel] || 0) * 10 + (item.isUnclearRequirement ? 20 : 0) + (item.status !== '完成归档' ? 10 : 0);
         return score(b) - score(a);
       });
+  }, [workorders]);
+
+  // 有评论的工单
+  const commentedWorkorders = useMemo(() => {
+    return workorders
+      .filter((w) => (w.comment_count || 0) > 0)
+      .sort((a, b) => (b.comment_count || 0) - (a.comment_count || 0));
   }, [workorders]);
 
   function handleToggleUrgent(id, isUrgent) {
@@ -436,9 +487,9 @@ export default function Dashboard() {
         <>
 
         {/* Data Source & Upload — always visible */}
-        <div className="panel" style={{ marginBottom: 8 }}>
+        <div className="panel panel-datasource" style={{ marginTop: 8, marginBottom: 8 }}>
           <div className="panel-hd">
-            <span className="ph-t">
+            <span className="ph-t ph-t-sm">
               <span className="ph-dot" style={{ background: 'var(--teal)' }} />
               数据源配置与上传
             </span>
@@ -452,6 +503,8 @@ export default function Dashboard() {
               lastSyncedAt={lastSyncedAt} syncing={syncing} syncMessage={syncMessage}
               feishuStatus={feishuStatus} onSourceChange={setSourceId}
               onAutoSyncChange={setAutoSyncEnabled} onManualSync={handleManualSync}
+              syncingComments={syncingComments} commentSyncMessage={commentSyncMessage}
+              onSyncComments={handleSyncComments}
             />
             <UploadExcel sourceId={sourceId} onUploaded={handleUploaded} />
           </div>
@@ -475,7 +528,9 @@ export default function Dashboard() {
           activeFilter={activeFilter}
           onErrorCardClick={setErrorDetail}
           focusWorkorders={focusWorkorders}
+          commentedWorkorders={commentedWorkorders}
           onDetailCardClick={setDetailWorkorder}
+          onCommentClick={setCommentWorkorder}
         />
 
         {/* Supplementary Charts & Time Analysis — always visible */}
@@ -523,6 +578,14 @@ export default function Dashboard() {
           <WorkorderDetailModal
             workorder={detailWorkorder}
             onClose={() => setDetailWorkorder(null)}
+          />
+        )}
+
+        {/* Comment Drawer */}
+        {commentWorkorder && (
+          <CommentDrawer
+            workorder={commentWorkorder}
+            onClose={() => setCommentWorkorder(null)}
           />
         )}
 

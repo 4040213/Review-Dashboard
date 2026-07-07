@@ -580,7 +580,10 @@ export function buildForecastLineOption(data, title = '剩余工单清空预测'
   if (!neutral) return {};
 
   const today = new Date();
-  const days = Array.from({ length: Math.max(pessimistic || 0, neutral || 0, optimistic || 0) + 5 }, (_, i) => {
+  // 计算实际需要的天数：剩余 / 最慢速率，至少 3 天，最多 14 天
+  const slowestRate = Math.max((avgDailyArchive7d || 1) * 0.6, 0.5);
+  const neededDays = Math.min(Math.max(Math.ceil(remainingUnclosed / slowestRate) + 2, 4), 14);
+  const days = Array.from({ length: neededDays }, (_, i) => {
     const d = new Date(today);
     d.setDate(d.getDate() + i);
     return d.toISOString().slice(0, 10);

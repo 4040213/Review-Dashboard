@@ -407,45 +407,28 @@ export default function UserProfile({ stats, workorders, feishuStatus, health })
             const isHighRisk = w.riskLevel === '高';
             const isRework = w.isRepeatedAdjustmentCandidate;
             const isArchived = w.status === '完成归档';
+            const borderColor = isBlocked ? 'var(--red)' : isHighRisk ? 'var(--red)' : isRework ? 'var(--gold)' : 'var(--border-subtle)';
 
             return (
-              <div key={w.id} className="panel" style={{
-                borderLeft: isBlocked ? '3px solid var(--red)' : isHighRisk ? '3px solid var(--red)' : isRework ? '3px solid var(--gold)' : '3px solid transparent',
-              }}>
-                <div className="panel-bd" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {/* 标签行 */}
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                    {isBlocked && <span className="tag tag-red">暂停</span>}
-                    {isHighRisk && <span className="tag tag-red">高风险</span>}
-                    {!isHighRisk && w.riskLevel === '中' && <span className="tag tag-orange">中风险</span>}
-                    {isRework && <span className="tag tag-orange">反复调整</span>}
-                    {isArchived && <span className="tag tag-green">已归档</span>}
-                    {!isArchived && !isBlocked && <span className="tag tag-blue">进行中</span>}
-                    <span style={{ fontSize: 'var(--fs-overline)', color: 'var(--text-muted)', marginLeft: 'auto' }}>
-                      {w.grade || '—'}{w.week ? ` · ${w.week}` : ''}
-                    </span>
-                  </div>
+              <div key={w.id} className="workorder-compact-card" style={{ borderLeftColor: borderColor }}>
+                {/* 标签行 */}
+                <div className="wcc-tags">
+                  {isBlocked && <span className="tag tag-red">暂停</span>}
+                  {isHighRisk && <span className="tag tag-red">高风险</span>}
+                  {!isHighRisk && w.riskLevel === '中' && <span className="tag tag-orange">中风险</span>}
+                  {isRework && <span className="tag tag-orange">反复调整</span>}
+                  {isArchived && <span className="tag tag-green">已归档</span>}
+                  {!isArchived && !isBlocked && <span className="tag tag-blue">进行中</span>}
+                  <span className="wcc-meta">{w.grade || '—'}{w.week ? ` · ${w.week}` : ''}</span>
+                </div>
 
-                  {/* 描述 */}
-                  <div style={{
-                    fontSize: 'var(--fs-body-sm)', color: 'var(--text-primary)', lineHeight: 1.5,
-                    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden', fontWeight: 500,
-                  }}>
-                    {w.description || '未填写问题描述'}
-                  </div>
+                {/* 描述 */}
+                <div className="wcc-desc">{w.description || '未填写问题描述'}</div>
 
-                  {/* 底部信息 */}
-                  <div style={{ display: 'flex', gap: 10, fontSize: 'var(--fs-overline)', color: 'var(--text-muted)', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                    <span>
-                      <Icon icon="mdi:tag-outline" width={12} height={12} style={{verticalAlign:'middle',marginRight:2}} />
-                      {w.issueCategory || '未分类'}
-                    </span>
-                    <span>
-                      <Icon icon="mdi:clock-outline" width={12} height={12} style={{verticalAlign:'middle',marginRight:2}} />
-                      {w.updatedAt ? new Date(w.updatedAt).toLocaleDateString('zh-CN') : '—'}
-                    </span>
-                  </div>
+                {/* 底部 */}
+                <div className="wcc-footer">
+                  <span>{w.issueCategory || '未分类'}</span>
+                  <span>{w.updatedAt ? new Date(w.updatedAt).toLocaleDateString('zh-CN') : '—'}</span>
                 </div>
               </div>
             );

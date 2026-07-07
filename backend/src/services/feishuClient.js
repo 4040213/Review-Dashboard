@@ -43,7 +43,7 @@ function parseTableId(url = '') {
   return String(url).match(/[?&]table=([^&#]+)/)?.[1] || '';
 }
 
-async function getTenantAccessToken() {
+export async function getTenantAccessToken() {
   const data = await feishuRequest('/auth/v3/tenant_access_token/internal', {
     method: 'POST',
     body: JSON.stringify({ app_id: requiredEnv('FEISHU_APP_ID'), app_secret: requiredEnv('FEISHU_APP_SECRET') })
@@ -136,7 +136,7 @@ function nullableField(value) {
   return text || null;
 }
 
-function inferStatusTimes({ status, updatedAt, submittedAt, resolvedAt, acceptedAt, archivedAt }) {
+export function inferStatusTimes({ status, updatedAt, submittedAt, resolvedAt, acceptedAt, archivedAt }) {
   return {
     submittedAt,
     resolvedAt: resolvedAt || (['待教研验收', '教研验收中', '完成归档'].includes(status) ? updatedAt : null),
@@ -156,7 +156,7 @@ function mapRecordToWorkorder(record, index, source) {
   const inferredTimes = inferStatusTimes({
     status,
     updatedAt,
-    submittedAt: explicitSubmittedAt || createdAt || null,
+    submittedAt: explicitSubmittedAt || createdAt || updatedAt || null,
     resolvedAt: nullableField(getValue('resolvedAt')),
     acceptedAt: nullableField(getValue('acceptedAt')),
     archivedAt: nullableField(getValue('archivedAt'))
@@ -184,12 +184,40 @@ function mapRecordToWorkorder(record, index, source) {
   };
 }
 
-export async function fetchFeishuWorkorders(sourceId) {
+export async function fetchFeishuWorkorders(sourceId, overrides = {}) {
   const source = getDataSource(sourceId);
   const tenantAccessToken = await getTenantAccessToken();
-  const appToken = await getBitableAppToken(tenantAccessToken, source);
-  const tableId = getTableId(source);
-  if (!tableId) throw new Error('缺少飞书多维表格 table_id');
+
+  // 支持自定义 bitable URL / table ID 覆盖默认配置
+  let appToken, tableId;
+
+  if (overrides.bitableUrl) {
+    // 从自定义 URL 解析 app_token 和 table_id
+    const wikiMatch = String(overrides.bitableUrl).match(/\/wiki\/([^/?#]+)/);
+    const wikiToken = wikiMatch?.[1] || '';
+    if (wikiToken) {
+      const wikiData = await feishuRequest(
+        `/wiki/v2/spaces/get_node?token=${encodeURIComponent(wikiToken)}`,
+        { headers: { Authorization: `Bearer ${tenantAccessToken}` } }
+      );
+      appToken = wikiData.data?.node?.obj_token;
+      if (!appToken) throw new Error('无法从提供的链接解析多维表格 app_token，请确认链接格式正确');
+    } else {
+      throw new Error('提供的链接格式不正确，需要包含 /wiki/ 路径');
+    }
+    // 从 URL 解析 table_id
+    const tableMatch = String(overrides.bitableUrl).match(/[?&]table=([^&#]+)/);
+    tableId = overrides.tableId || tableMatch?.[1] || '';
+  } else {
+    appToken = await getBitableAppToken(tenantAccessToken, source);
+    tableId = overrides.tableId || getTableId(source);
+  }
+
+  if (!tableId) throw new Error('缺少飞书多维表格 table_id，请在链接中包含 ?table=xxx 或手动输入');
+  if (!appToken) throw new Error('缺少飞书多维表格 app_token');
+
+  console.log(`[feishuClient] 同步表格: app_token=${appToken}, table_id=${tableId}`);
+
   const records = await fetchAllRecords(tenantAccessToken, appToken, tableId);
   return { source, workorders: records.map((record, index) => mapRecordToWorkorder(record, index, source)) };
 }

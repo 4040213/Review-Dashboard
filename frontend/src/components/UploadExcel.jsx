@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Icon } from '@iconify/react';
-import { syncFeishu, uploadExcel } from '../api/workorders.js';
+import { uploadExcel } from '../api/workorders.js';
 
 export default function UploadExcel({ sourceId, onUploaded }) {
   const fileInputRef = useRef(null);
@@ -30,7 +30,6 @@ export default function UploadExcel({ sourceId, onUploaded }) {
       if (invalid > 0) msg += `，${invalid} 条标记为无效`;
       msg += '。';
 
-      // Show details about valid/invalid breakdown
       if (valid === 0 && total > 0) {
         msg += ` 注意：所有 ${total} 条均被标记为无效，请检查数据完整性。`;
       }
@@ -45,30 +44,6 @@ export default function UploadExcel({ sourceId, onUploaded }) {
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  }
-
-  async function handleFeishuSync() {
-    setUploading(true);
-    setStatusType('');
-    setLastResult(null);
-    setStatus('正在从飞书多维表格同步工单数据...');
-
-    try {
-      const result = await syncFeishu(sourceId);
-      const stats = result.stats || {};
-      const total = stats.totalRawCount ?? result.count ?? 0;
-      const valid = stats.validAnalysisCount ?? 0;
-
-      setStatus(`同步完成 · ${result.message || '同步成功'}（共 ${total} 条，${valid} 条有效）`);
-      setStatusType('success');
-      setLastResult({ total, valid, invalid: 0 });
-      onUploaded?.(result);
-    } catch (error) {
-      setStatus(`❌ 飞书同步失败：${error.message || '请求失败'}`);
-      setStatusType('error');
-    } finally {
-      setUploading(false);
     }
   }
 
@@ -87,9 +62,6 @@ export default function UploadExcel({ sourceId, onUploaded }) {
           {uploading ? '解析中...' : <><Icon icon="mdi:file-excel-outline" width={16} height={16} style={{marginRight:4,verticalAlign:'middle'}} /> 选择 Excel 文件</>}
           <input ref={fileInputRef} type="file" accept=".xlsx,.xls" disabled={uploading} onChange={handleFileChange} />
         </label>
-        <button className="secondary-button" type="button" disabled={uploading} onClick={handleFeishuSync}>
-          <Icon icon="mdi:sync" width={16} height={16} style={{marginRight:4,verticalAlign:'middle'}} /> 从飞书同步
-        </button>
       </div>
 
       {status && (

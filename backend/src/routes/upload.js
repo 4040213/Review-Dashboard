@@ -4,6 +4,7 @@ import { defaultSourceId, getDataSource } from '../config/dataSources.js';
 import { parseWorkorderExcel } from '../services/excelParser.js';
 import { analyzeWorkorders, buildStats } from '../services/analyzer.js';
 import { replaceWorkorders } from '../db/database.js';
+import { inferStatusTimes } from '../services/feishuClient.js';
 
 const router = express.Router();
 const upload = multer({
@@ -36,13 +37,45 @@ router.post('/', upload.single('file'), async (req, res) => {
     const source = getDataSource(req.body?.sourceId || req.query.sourceId || defaultSourceId);
     console.log(`[upload] Received file: ${req.file.originalname} (${(req.file.size / 1024).toFixed(1)} KB), source: ${source.id}`);
 
-    const parsedWorkorders = parseWorkorderExcel(req.file.buffer).map((item) => ({
-      ...item,
-      id: `${source.id}:excel:${item.id}`,
-      sourceId: source.id,
-      sourceName: source.name,
-      sourceRecordId: `excel:${item.id}`
-    }));
+    const parsedWorkorders = parseWorkorderExcel(req.file.buffer).map((item) => {
+      // 规范化日期格式：兼容 Excel 中的 "2026/06/29 11:13" 等非标准格式
+      const normalizeDate = (val) => {
+        if (!val) return null;
+        if (typeof val === 'number') {
+          const ms = val < 10_000_000_000 ? val * 1000 : val;
+          const d = new Date(ms);
+          return Number.isNaN(d.getTime()) ? null : d.toISOString();
+        }
+        // 尝试解析 "2026/06/29 11:13", "2026-06-29", "2026/6/29" 等格式
+        const d = new Date(String(val).replace(/\//g, '-'));
+        return Number.isNaN(d.getTime()) ? String(val) : d.toISOString();
+      };
+
+      const updatedAt = normalizeDate(item.updatedAt);
+
+      // 根据状态推断缺失的时间戳（与飞书同步逻辑一致）
+      const inferred = inferStatusTimes({
+        status: item.status,
+        updatedAt,
+        submittedAt: normalizeDate(item.submittedAt),
+        resolvedAt: normalizeDate(item.resolvedAt),
+        acceptedAt: normalizeDate(item.acceptedAt),
+        archivedAt: normalizeDate(item.archivedAt)
+      });
+
+      return {
+        ...item,
+        id: `${source.id}:excel:${item.id}`,
+        sourceId: source.id,
+        sourceName: source.name,
+        sourceRecordId: `excel:${item.id}`,
+        updatedAt,
+        submittedAt: inferred.submittedAt || updatedAt,
+        resolvedAt: inferred.resolvedAt,
+        acceptedAt: inferred.acceptedAt,
+        archivedAt: inferred.archivedAt
+      };
+    });
 
     console.log(`[upload] Parsed ${parsedWorkorders.length} workorders from Excel`);
 
