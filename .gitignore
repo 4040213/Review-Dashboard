@@ -72,11 +72,17 @@ desktop.ini
 
 # Claude Code local files
 .agents/
-.claude/skills/
+.claude/
 skills-lock.json
 
+# Design / preview / temp docs
 .docs
 docs/
+SITE_STRUCTURE.md
+ui-preview.html
+
+# Root duplicate of logo (real one is in frontend/public/)
+/logo.png
 
 # User classification rules (generated at runtime)
 backend/src/rules/userIssueRules.json
