@@ -66,7 +66,9 @@ function getInvalidType(workorder) {
   for (const rule of invalidTypeRules) {
     if (rule.keywords.some((kw) => includesKeyword(description, kw))) return rule.type;
   }
-  if (!workorder.coursePosition || !workorder.type || !workorder.status) return 'incomplete';
+  // Only mark as incomplete if description is too short to be meaningful.
+  // Missing coursePosition/type/status should NOT auto-invalidate — field
+  // mapping may have failed due to different column names.
   if (description.length < 6 && !validShortIssues.includes(description)) return 'incomplete';
   return null;
 }
@@ -99,10 +101,24 @@ function getInvalidReasons(workorder) {
   const reasons = [];
   const description = String(workorder.description || '').trim();
 
-  if (!workorder.coursePosition || !workorder.type || !description || !workorder.status) reasons.push('核心字段缺失');
+  // Only description is truly critical — without it we can't analyze anything.
+  // Other fields (coursePosition, type, status) enhance analysis but their
+  // absence should NOT automatically invalidate the workorder.
+  if (!description) {
+    reasons.push('问题描述为空');
+  }
   if (placeholderDescriptions.includes(description)) reasons.push('占位或非问题描述');
-  if (description.length < 6 && !validShortIssues.includes(description) && !workorder.issueKeywords.length) reasons.push('描述过短且无法分类');
-  if (workorder.issueCategory === '其他' && workorder.issueKeywords.length === 0 && workorder.unclearReasons.length === 0) reasons.push('无法归类且缺少关键词');
+  if (description && description.length < 6 && !validShortIssues.includes(description) && !workorder.issueKeywords.length) reasons.push('描述过短且无法分类');
+
+  // Only mark "无法归类" if description exists but is truly unclassifiable
+  // AND there are no other signals at all
+  if (description && !placeholderDescriptions.includes(description)
+      && workorder.issueCategory === '其他'
+      && workorder.issueKeywords.length === 0
+      && workorder.unclearReasons.length === 0
+      && description.length < 3) {
+    reasons.push('无法归类且缺少关键词');
+  }
 
   return uniq(reasons);
 }

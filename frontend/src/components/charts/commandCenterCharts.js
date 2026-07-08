@@ -166,7 +166,7 @@ export function buildHorizontalBarOption(title, data, color = cmdColors.brand, m
 
 // ── 柱线组合图 (新vs归档吞吐趋势) ──────────────────────
 
-export function buildThroughputComboOption(data) {
+export function buildThroughputComboOption(data, windowSize = 14) {
   if (!data?.length) return {};
   const dates = data.map((d) => d.date);
   const newVals = data.map((d) => d.newCount || 0);
@@ -179,7 +179,7 @@ export function buildThroughputComboOption(data) {
 
   return {
     ...baseChartOption,
-    title: { text: '近14日工单吞吐趋势', left: 0, top: 0, textStyle: { color: cmdColors.text, fontSize: 15, fontWeight: 800 } },
+    title: { text: `近${windowSize}日工单吞吐趋势`, left: 0, top: 0, textStyle: { color: cmdColors.text, fontSize: 15, fontWeight: 800 } },
     tooltip: {
       trigger: 'axis',
       backgroundColor: 'rgba(255, 255, 255, 0.92)',

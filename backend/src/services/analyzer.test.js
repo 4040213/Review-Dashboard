@@ -41,7 +41,7 @@ test('analyzeWorkorders excludes empty description from core analysis', () => {
   const [result] = analyzeWorkorders([createWorkorder({ description: '', status: '处理中' })]);
 
   assert.equal(result.isValidForAnalysis, false);
-  assert.equal(result.invalidReasons.includes('核心字段缺失'), true);
+  assert.equal(result.invalidReasons.includes('问题描述为空'), true);
   assert.equal(result.riskLevel, '低');
   assert.equal(result.isRepeatedAdjustmentCandidate, false);
 });

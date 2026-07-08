@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getFeishuStatus, getHealth, getSources, getStats, getWorkorders, syncFeishu, syncFeishuComments, getCommandAll } from '../api/workorders.js';
+import { useCallback, useMemo, useState } from 'react';
+import { useData } from '../context/DataContext.jsx';
 import Charts from '../components/Charts.jsx';
 import ClassificationPanel from '../components/ClassificationPanel.jsx';
 import DataSourceBar from '../components/DataSourceBar.jsx';
@@ -19,42 +19,6 @@ import UserProfile from '../components/UserProfile.jsx';
 import CommentDrawer from '../components/CommentDrawer.jsx';
 import { Icon } from '@iconify/react';
 
-const emptyStats = {
-  totalRawCount: 0,
-  totalCount: 0,
-  validAnalysisCount: 0,
-  invalidAnalysisCount: 0,
-  unfinishedCount: 0,
-  archivedCount: 0,
-  archiveRate: 0,
-  completionRate: 0,
-  unclearCount: 0,
-  unclearRate: 0,
-  highRiskCount: 0,
-  repeatedCandidateCount: 0,
-  repeatedAdjustmentCandidateCount: 0,
-  repeatedAdjustmentRate: 0,
-  classificationWarning: '',
-  typeRanking: [],
-  issueCategoryRanking: [],
-  unclearReasonRanking: [],
-  repeatedAdjustmentRanking: [],
-  errorContentRanking: [],
-  statusRanking: [],
-  statusGroupRanking: [],
-  gradeRanking: [],
-  weekRanking: [],
-  focusWorkorders: [],
-  typicalCases: { highRiskCases: [], unclearCases: [], repeatedAdjustmentCases: [] },
-  timeTrend: [],
-  durationStats: [],
-  pendingDurationRanking: [],
-  hasTimeAnalysisData: false,
-  invalidReasonRanking: [],
-  passRate: null,
-  passTotal: 0
-};
-
 const defaultFilterState = {
   scope: 'valid',
   excludedStatuses: ['暂停/挂起'],
@@ -63,298 +27,68 @@ const defaultFilterState = {
 };
 
 export default function Dashboard() {
-  const [workorders, setWorkorders] = useState([]);
-  const [stats, setStats] = useState(emptyStats);
-  const [health, setHealth] = useState('连接中');
-  const [loading, setLoading] = useState(true);
-  const [sources, setSources] = useState([]);
-  const [sourceId, setSourceId] = useState('summer_2026');
-  const [autoSyncEnabled, setAutoSyncEnabled] = useState(false);
-  const [lastSyncedAt, setLastSyncedAt] = useState('');
-  const [syncing, setSyncing] = useState(false);
-  const [feishuStatus, setFeishuStatus] = useState(null);
-  const [syncMessage, setSyncMessage] = useState('');
+  // ── 从 DataContext 获取核心状态 ──
+  const {
+    workorders, stats, commandData, sources, sourceId,
+    health, loading, feishuStatus, syncing, syncMessage, lastSyncedAt,
+    setSourceId, refresh, sync,
+    updateWorkorders,
+    pendingReviewData, reworkData, invalidData,
+    focusWorkorders, commentedWorkorders,
+  } = useData();
 
-  // Phase 1A new state
+  // ── 本地 UI 状态 ──
   const [activeFilter, setActiveFilter] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
   const [filterState, setFilterState] = useState(defaultFilterState);
   const [showClassificationPanel, setShowClassificationPanel] = useState(false);
-
-  // Detail modal state
   const [detailWorkorder, setDetailWorkorder] = useState(null);
   const [errorDetail, setErrorDetail] = useState(null);
-
-  // Comment state
   const [commentWorkorder, setCommentWorkorder] = useState(null);
-  const [syncingComments, setSyncingComments] = useState(false);
-  const [commentSyncMessage, setCommentSyncMessage] = useState('');
-  const [customTableUrl, setCustomTableUrl] = useState('');
+  const [autoSyncEnabled, setAutoSyncEnabled] = useState(false);
 
-  // ── 生产指挥舱状态 ──
+  // ── 生产指挥舱 UI ──
   const [activeCommandTab, setActiveCommandTab] = useState('overview');
-  const [commandData, setCommandData] = useState(null);
-  const [viewMode, setViewMode] = useState('legacy'); // 'command' | 'legacy'
+  const [viewMode, setViewMode] = useState('legacy');
 
-  async function loadDashboardData(nextSourceId = sourceId) {
-    if (!nextSourceId) return;
-    setLoading(true);
-    try {
-      const [workordersResult, statsResult] = await Promise.all([
-        getWorkorders(nextSourceId),
-        getStats(nextSourceId)
-      ]);
-      const loadedWorkorders = workordersResult.workorders || [];
-      const loadedStats = { ...emptyStats, ...(statsResult || {}) };
-      setWorkorders(loadedWorkorders);
-      setStats(loadedStats);
-      // Auto-adjust filter: if no valid data but has invalid, show all
-      if ((loadedStats.validAnalysisCount ?? 0) === 0 && (loadedStats.invalidAnalysisCount ?? 0) > 0) {
-        setFilterState((prev) => ({ ...prev, scope: 'all' }));
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  }
+  // ── 自动同步 ──
+  // 注：autoSync 逻辑从旧版迁移，统一使用 sync()
+  // (autoSync timer kept simple for now)
 
-  // 加载指挥舱数据
-  async function loadCommandData(nextSourceId) {
-    if (!nextSourceId) return;
-    try {
-      const data = await getCommandAll(nextSourceId);
-      setCommandData(data);
-    } catch (error) {
-      console.error('Failed to load command center data:', error);
-    }
-  }
-
-  function applySyncResult(result) {
-    setWorkorders(result.workorders || []);
-    setStats({ ...emptyStats, ...(result.stats || {}) });
-    setLastSyncedAt(result.syncedAt || new Date().toISOString());
-    // Auto-adjust filter: if no valid data but has invalid, show all
-    const stats = result.stats || {};
-    if ((stats.validAnalysisCount ?? 0) === 0 && (stats.invalidAnalysisCount ?? 0) > 0) {
-      setFilterState((prev) => ({ ...prev, scope: 'all' }));
-    }
-    // 刷新指挥舱数据（飞书同步后图表需要更新）
-    if (sourceId) loadCommandData(sourceId);
-  }
-
-  async function handleManualSync(customBitableUrl) {
-    if (!sourceId) return;
-    setSyncing(true);
-    setSyncMessage('');
-    try {
-      if (customBitableUrl) setCustomTableUrl(customBitableUrl);
-      const options = {};
-      if (customBitableUrl) {
-        options.bitableUrl = customBitableUrl;
-        const tableMatch = String(customBitableUrl).match(/[?&]table=([^&#]+)/);
-        if (tableMatch) options.tableId = tableMatch[1];
-      }
-      const result = await syncFeishu(sourceId, options);
-      applySyncResult(result);
-      await loadCommandData(sourceId);
-      const tableInfo = customBitableUrl ? '（自定义表格）' : '';
-      setSyncMessage(`同步成功${tableInfo}：共 ${result.count || 0} 条工单`);
-    } catch (error) {
-      const message = error.message || '飞书同步失败';
-      setSyncMessage(`同步失败：${message}`);
-    } finally {
-      setSyncing(false);
-    }
-  }
-
-  async function handleSyncComments() {
-    setSyncingComments(true);
-    setCommentSyncMessage('');
-    try {
-      const options = {};
-      if (customTableUrl) options.bitableUrl = customTableUrl;
-      const result = await syncFeishuComments(false, options);
-      const msg = result.savedCommentCount !== undefined
-        ? `评论同步成功！共 ${result.rawCommentCount} 条评论，保存 ${result.savedCommentCount} 条`
-        : `评论同步成功：${result.message || '已完成'}`;
-      setCommentSyncMessage(msg);
-      await loadDashboardData(sourceId);
-    } catch (error) {
-      let message = error.message || '评论同步失败';
-      try {
-        const body = JSON.parse(error.message);
-        if (body?.permissionHint) {
-          message = `${body.message || '权限不足'}\n${body.permissionHint.summary}\n需要权限: ${body.permissionHint.requiredScope}`;
-        }
-        // eslint-disable-next-line no-empty
-      } catch {}
-      setCommentSyncMessage(`❌ ${message}`);
-      console.error('评论同步详细错误:', error);
-    } finally {
-      setSyncingComments(false);
-    }
-  }
-
-  function handleUploaded(result) {
-    setWorkorders(result.workorders || []);
-    setStats({ ...emptyStats, ...(result.stats || {}) });
-    setLastSyncedAt(new Date().toISOString());
-    // Auto-adjust filter: if no valid data but has invalid, show all
-    const stats = result.stats || {};
-    if ((stats.validAnalysisCount ?? 0) === 0 && (stats.invalidAnalysisCount ?? 0) > 0) {
-      setFilterState((prev) => ({ ...prev, scope: 'all' }));
-    }
-    // 刷新指挥舱数据
-    if (sourceId) loadCommandData(sourceId);
-  }
-
-  function handleReanalyzed(result) {
-    if (result?.workorders) {
-      setWorkorders(result.workorders);
-    }
-    if (result?.stats) {
-      setStats({ ...emptyStats, ...result.stats });
-    }
-    // 刷新指挥舱数据
-    if (sourceId) loadCommandData(sourceId);
-  }
-
-  // ── 指挥舱交互处理 ──
-
-  function handleHeatmapCellClick({ grade, week }) {
-    // 从热力图点击→跳转到Tab 3并筛选
-    setActiveCommandTab('tasklist');
-  }
-
-  function handleResearcherClick(name) {
-    // 从负载图点击→跳转到Tab 3并筛选
-    setActiveCommandTab('tasklist');
-  }
-
-  function handleStatusDrillDown(group) {
-    // 状态环形图下钻
-    // 可在此处理下钻逻辑
-  }
-
-  // 计算Tab徽章数
-  const tabBadgeCounts = useMemo(() => ({
-    tasklist: commandData?.tasklist?.workorders?.filter((w) => w.statusGroupV2 !== '已关闭').length || 0
-  }), [commandData]);
-
-  // Handle filter changes from LeftConclusionPanel and FilterToolbar
-  const handleFilterChange = useCallback((newFilter) => {
-    setActiveFilter(newFilter);
-    // When a left-side conclusion item is clicked, switch to 'all' tab to show filtered data
-    if (newFilter && activeTab !== 'all') {
-      setActiveTab('all');
-    }
-  }, [activeTab]);
-
-  // Handle filter state from FilterToolbar
-  const handleToolbarFilterChange = useCallback((newFilterState) => {
-    setFilterState(newFilterState);
-  }, []);
-
-  // Apply filterState to workorders for table display
+  // ── 关键字搜索 ──
   const displayedWorkorders = useMemo(() => {
     if (!workorders.length) return [];
-
     const keyword = (filterState.keyword || '').trim().toLowerCase();
-
     return workorders.filter((item) => {
-      // Scope filter
       if (filterState.scope === 'valid' && !item.isValidForAnalysis) return false;
       if (filterState.scope === 'invalid' && item.isValidForAnalysis) return false;
-
-      // Status filter
-      const statusGroup = item.statusGroup || '';
       if (filterState.excludedStatuses.includes(item.status)) return false;
+      const statusGroup = item.statusGroup || '';
       if (filterState.excludedStatuses.includes(statusGroup)) return false;
-
-      // Invalid type filter
       if (filterState.excludedInvalidTypes.includes(item.invalidType || 'incomplete') && !item.isValidForAnalysis) return false;
-
-      // Keyword search
       if (keyword && !String(item.description || '').toLowerCase().includes(keyword)) return false;
-
       return true;
     });
   }, [workorders, filterState]);
 
-  // Compute data for tab views
-  const pendingReviewData = useMemo(() => {
-    return workorders.filter((w) =>
-      w.isValidForAnalysis &&
-      (w.status === '待教研验收' || w.statusGroup === '待验收')
-    );
-  }, [workorders]);
+  // ── 指挥舱交互 ──
+  function handleHeatmapCellClick() { setActiveCommandTab('tasklist'); }
+  function handleResearcherClick() { setActiveCommandTab('tasklist'); }
 
-  const reworkData = useMemo(() => {
-    return workorders.filter((w) => w.isRepeatedAdjustmentCandidate && w.isValidForAnalysis);
-  }, [workorders]);
+  const tabBadgeCounts = useMemo(() => ({
+    tasklist: commandData?.tasklist?.workorders?.filter((w) => w.statusGroupV2 !== '已关闭').length || 0
+  }), [commandData]);
 
-  const invalidData = useMemo(() => {
-    return workorders.filter((w) => !w.isValidForAnalysis);
-  }, [workorders]);
+  const handleFilterChange = useCallback((newFilter) => {
+    setActiveFilter(newFilter);
+    if (newFilter && activeTab !== 'all') setActiveTab('all');
+  }, [activeTab]);
 
-  // Compute focus workorders for auto-scroll
-  const focusWorkorders = useMemo(() => {
-    const seen = new Set();
-    const valid = workorders.filter((w) => w.isValidForAnalysis);
-    return valid
-      .filter((w) => w.isRepeatedAdjustmentCandidate || w.isUnclearRequirement || w.riskLevel === '高' || w.status !== '完成归档')
-      .filter((w) => {
-        if (seen.has(w.id)) return false;
-        seen.add(w.id);
-        return true;
-      })
-      .sort((a, b) => {
-        const riskScore = { '高': 3, '中': 2, '低': 1 };
-        const score = (item) => (item.isRepeatedAdjustmentCandidate ? 40 : 0) + (riskScore[item.riskLevel] || 0) * 10 + (item.isUnclearRequirement ? 20 : 0) + (item.status !== '完成归档' ? 10 : 0);
-        return score(b) - score(a);
-      });
-  }, [workorders]);
-
-  // 有评论的工单
-  const commentedWorkorders = useMemo(() => {
-    return workorders
-      .filter((w) => (w.comment_count || 0) > 0)
-      .sort((a, b) => (b.comment_count || 0) - (a.comment_count || 0));
-  }, [workorders]);
-
-  function handleToggleUrgent(id, isUrgent) {
-    setWorkorders((prev) =>
-      prev.map((w) => (w.id === id ? { ...w, isUrgent } : w))
-    );
-  }
-
-  useEffect(() => {
-    getHealth().then(() => setHealth('后端已连接')).catch(() => setHealth('后端未连接'));
-    getSources().then((result) => {
-      setSources(result.sources || []);
-      setSourceId(result.defaultSourceId || result.sources?.[0]?.id || 'summer_2026');
-    }).catch(() => {
-      console.error('Failed to load sources, using default');
-      setSourceId('summer_2026');
-    });
-    getFeishuStatus().then(setFeishuStatus).catch(() => setFeishuStatus({ configured: false, hint: '无法检查飞书配置状态' }));
+  const handleToolbarFilterChange = useCallback((newFilterState) => {
+    setFilterState(newFilterState);
   }, []);
 
-  useEffect(() => {
-    loadDashboardData(sourceId);
-    loadCommandData(sourceId);
-  }, [sourceId]);
-
-  useEffect(() => {
-    if (!autoSyncEnabled || !sourceId) return undefined;
-    const timer = window.setInterval(() => {
-      handleManualSync();
-    }, 5 * 60 * 1000);
-    return () => window.clearInterval(timer);
-  }, [autoSyncEnabled, sourceId]);
-
-  // ── 侧边栏导航处理 ──
+  // 侧边栏导航
   function handleNavigate(view) {
     if (view === 'command' || view === 'legacy' || view === 'profile') {
       setViewMode(view);
@@ -363,29 +97,40 @@ export default function Dashboard() {
     } else if (view === 'export') {
       if (stats.totalRawCount) downloadReviewReport(stats);
     } else if (view === 'import' || view === 'feishu') {
-      // 数据导入/飞书同步 → 切换到数据看板，数据源面板始终可见
       setViewMode('legacy');
     }
   }
 
   function handleSidebarAction(actionId) {
-    if (actionId === 'export') {
-      if (stats.totalRawCount) downloadReviewReport(stats);
-    }
+    if (actionId === 'export' && stats.totalRawCount) downloadReviewReport(stats);
+  }
+
+  // ── 同步回调（传递给 DataSourceBar）──
+  async function handleManualSync(customBitableUrl) {
+    await sync(customBitableUrl);
+  }
+
+  // ── Excel 上传回调 ──
+  function handleUploaded(result) {
+    if (result?.workorders) updateWorkorders(result.workorders, result.stats);
+    refresh();
+  }
+
+  // ── 重新分析回调 ──
+  function handleReanalyzed(result) {
+    if (result?.workorders) updateWorkorders(result.workorders, result.stats);
+    refresh();
   }
 
   return (
     <div className="dashboard">
-      {/* ── 侧边栏 ── */}
       <Sidebar
         activeView={viewMode}
         onNavigate={handleNavigate}
         onAction={handleSidebarAction}
       />
 
-      {/* ── 主内容区 ── */}
       <div className="dashboard-main">
-
         {/* ── 顶部栏 ── */}
         <div className="new-topbar">
           <div className="new-topbar-left">
@@ -413,7 +158,7 @@ export default function Dashboard() {
             <button className="new-topbar-btn" title="通知">
               <Icon icon="mdi:bell-outline" width={18} height={18} />
             </button>
-            <button className="new-topbar-btn" title="刷新" onClick={() => { loadDashboardData(sourceId); loadCommandData(sourceId); }}>
+            <button className="new-topbar-btn" title="刷新" onClick={refresh}>
               <Icon icon="mdi:refresh" width={18} height={18} />
             </button>
             <span className={`health-badge ${health === '后端已连接' ? 'ok' : 'warn'}`} style={{fontSize:11}}>
@@ -431,48 +176,25 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── 内容区 ── */}
         <div className="content-area">
 
         {/* ── 个人主页视图 ── */}
         {viewMode === 'profile' && (
-          <UserProfile
-            stats={stats}
-            workorders={workorders}
-            feishuStatus={feishuStatus}
-            health={health}
-          />
+          <UserProfile stats={stats} workorders={workorders} feishuStatus={feishuStatus} health={health} />
         )}
 
         {/* ── 生产指挥舱视图 ── */}
         {viewMode === 'command' && (
           <>
-            <TabNavigation
-              activeTab={activeCommandTab}
-              onTabChange={setActiveCommandTab}
-              badgeCounts={tabBadgeCounts}
-            />
-
+            <TabNavigation activeTab={activeCommandTab} onTabChange={setActiveCommandTab} badgeCounts={tabBadgeCounts} />
             <div className="cc-dashboard-content">
-              {activeCommandTab === 'overview' && (
-                <OverviewTab data={commandData?.overview} />
-              )}
+              {activeCommandTab === 'overview' && <OverviewTab data={commandData?.overview} />}
               {activeCommandTab === 'diagnostics' && (
-                <DiagnosticsTab
-                  data={commandData?.diagnostics}
-                  onCellClick={handleHeatmapCellClick}
-                  onResearcherClick={handleResearcherClick}
-                />
+                <DiagnosticsTab data={commandData?.diagnostics} onCellClick={handleHeatmapCellClick} onResearcherClick={handleResearcherClick} />
               )}
-              {activeCommandTab === 'tasklist' && (
-                <TaskListTab data={commandData?.tasklist} />
-              )}
-              {activeCommandTab === 'forecast' && (
-                <ForecastTab data={commandData?.forecast} />
-              )}
+              {activeCommandTab === 'tasklist' && <TaskListTab data={commandData?.tasklist} />}
+              {activeCommandTab === 'forecast' && <ForecastTab data={commandData?.forecast} />}
             </div>
-
-            {/* 刷新时间 */}
             {commandData?._meta && (
               <div className="cc-refresh-info">
                 数据计算时间：{new Date(commandData._meta.computedAt).toLocaleString('zh-CN')}
@@ -484,112 +206,79 @@ export default function Dashboard() {
 
         {/* ── 新版数据看板视图 ── */}
         {viewMode === 'legacy' && (
-        <>
+          <>
+            <div className="panel panel-datasource" style={{ marginTop: 8, marginBottom: 8 }}>
+              <div className="panel-hd">
+                <span className="ph-t ph-t-sm">
+                  <span className="ph-dot" style={{ background: 'var(--teal)' }} />
+                  数据源配置与上传
+                </span>
+                <span style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)', fontWeight: 400 }}>
+                  {sources.length ? `当前数据源：${sources.find(s => s.id === sourceId)?.name || '-'}` : '未配置'}
+                </span>
+              </div>
+              <div className="panel-bd">
+                <DataSourceBar
+                  sources={sources} sourceId={sourceId} autoSyncEnabled={autoSyncEnabled}
+                  lastSyncedAt={lastSyncedAt} syncing={syncing} syncMessage={syncMessage}
+                  feishuStatus={feishuStatus} onSourceChange={setSourceId}
+                  onAutoSyncChange={setAutoSyncEnabled} onManualSync={handleManualSync}
+                />
+                <UploadExcel sourceId={sourceId} onUploaded={handleUploaded} />
+              </div>
+            </div>
 
-        {/* Data Source & Upload — always visible */}
-        <div className="panel panel-datasource" style={{ marginTop: 8, marginBottom: 8 }}>
-          <div className="panel-hd">
-            <span className="ph-t ph-t-sm">
-              <span className="ph-dot" style={{ background: 'var(--teal)' }} />
-              数据源配置与上传
-            </span>
-            <span style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)', fontWeight: 400 }}>
-              {sources.length ? `当前数据源：${sources.find(s => s.id === sourceId)?.name || '-'}` : '未配置'}
-            </span>
-          </div>
-          <div className="panel-bd">
-            <DataSourceBar
-              sources={sources} sourceId={sourceId} autoSyncEnabled={autoSyncEnabled}
-              lastSyncedAt={lastSyncedAt} syncing={syncing} syncMessage={syncMessage}
-              feishuStatus={feishuStatus} onSourceChange={setSourceId}
-              onAutoSyncChange={setAutoSyncEnabled} onManualSync={handleManualSync}
-              syncingComments={syncingComments} commentSyncMessage={commentSyncMessage}
-              onSyncComments={handleSyncComments}
+            <OverviewDashboard
+              stats={stats} workorders={workorders} commandData={commandData}
+              activeTab={activeTab} onTabChange={setActiveTab}
+              onFilterChange={handleFilterChange}
+              displayedWorkorders={displayedWorkorders}
+              filterState={filterState}
+              onToolbarFilterChange={handleToolbarFilterChange}
+              pendingReviewData={pendingReviewData}
+              reworkData={reworkData}
+              invalidData={invalidData}
+              activeFilter={activeFilter}
+              onErrorCardClick={setErrorDetail}
+              focusWorkorders={focusWorkorders}
+              commentedWorkorders={commentedWorkorders}
+              onDetailCardClick={setDetailWorkorder}
+              onCommentClick={setCommentWorkorder}
             />
-            <UploadExcel sourceId={sourceId} onUploaded={handleUploaded} />
-          </div>
-        </div>
 
-        {/* ── 新版 Overview Dashboard ── */}
-        <OverviewDashboard
-          stats={stats}
-          workorders={workorders}
-          commandData={commandData}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          onFilterChange={handleFilterChange}
-          displayedWorkorders={displayedWorkorders}
-          filterState={filterState}
-          onToolbarFilterChange={handleToolbarFilterChange}
-          pendingReviewData={pendingReviewData}
-          reworkData={reworkData}
-          invalidData={invalidData}
-          onToggleUrgent={handleToggleUrgent}
-          activeFilter={activeFilter}
-          onErrorCardClick={setErrorDetail}
-          focusWorkorders={focusWorkorders}
-          commentedWorkorders={commentedWorkorders}
-          onDetailCardClick={setDetailWorkorder}
-          onCommentClick={setCommentWorkorder}
-        />
+            <div className="sec-header">
+              <span className="sec-title">辅助图表与时间分析</span>
+            </div>
+            <TimeAnalysis stats={stats} />
+            <Charts stats={stats} />
 
-        {/* Supplementary Charts & Time Analysis — always visible */}
-        <div className="sec-header">
-          <span className="sec-title">辅助图表与时间分析</span>
-        </div>
-        <TimeAnalysis stats={stats} />
-        <Charts stats={stats} />
-
-        {/* Loading indicator */}
-        {loading && <div className="panel loading" style={{ marginTop: 20 }}>正在读取本地工单数据...</div>}
-
-        {/* Close legacy view wrapper */}
-        </>
+            {loading && <div className="panel loading" style={{ marginTop: 20 }}>正在读取本地工单数据...</div>}
+          </>
         )}
 
         </div>{/* /content-area */}
 
-        {/* ── 全局弹窗（两种视图共用）── */}
-
-        {/* Classification Panel (slide-out) */}
+        {/* ── 全局弹窗 ── */}
         {showClassificationPanel && (
           <ClassificationPanel
-            sourceId={sourceId}
-            stats={stats}
+            sourceId={sourceId} stats={stats}
             onClose={() => setShowClassificationPanel(false)}
             onReanalyzed={handleReanalyzed}
           />
         )}
-
-        {/* Error Detail Modal */}
         {errorDetail && (
           <ErrorDetailModal
-            item={errorDetail}
-            onClose={() => setErrorDetail(null)}
-            onViewExample={(example) => {
-              setErrorDetail(null);
-              setDetailWorkorder(example);
-            }}
+            item={errorDetail} onClose={() => setErrorDetail(null)}
+            onViewExample={(example) => { setErrorDetail(null); setDetailWorkorder(example); }}
           />
         )}
-
-        {/* Detail Modal */}
         {detailWorkorder && (
-          <WorkorderDetailModal
-            workorder={detailWorkorder}
-            onClose={() => setDetailWorkorder(null)}
-          />
+          <WorkorderDetailModal workorder={detailWorkorder} onClose={() => setDetailWorkorder(null)} />
         )}
-
-        {/* Comment Drawer */}
         {commentWorkorder && (
-          <CommentDrawer
-            workorder={commentWorkorder}
-            onClose={() => setCommentWorkorder(null)}
-          />
+          <CommentDrawer workorder={commentWorkorder} onClose={() => setCommentWorkorder(null)} />
         )}
-
-      </div>{/* /dashboard-main */}
+      </div>
     </div>
   );
 }

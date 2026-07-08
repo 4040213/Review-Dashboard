@@ -49,6 +49,18 @@ export function syncFeishu(sourceId, options = {}) {
   });
 }
 
+/** 统一同步：一次调用完成工单 + 评论同步 */
+export function syncFeishuAll(sourceId, options = {}) {
+  const body = { sourceId };
+  if (options.bitableUrl) body.bitableUrl = options.bitableUrl;
+  if (options.tableId) body.tableId = options.tableId;
+  return request('/feishu/sync-all', {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
 export function getFeishuStatus() {
   return request('/feishu/status');
 }
@@ -138,6 +150,10 @@ export function getCommandBhi(sourceId) {
   return request(withSource('/command-center/bhi', sourceId));
 }
 
+export function getCommandDebug(sourceId) {
+  return request(withSource('/command-center/debug', sourceId));
+}
+
 export function getCommandAll(sourceId) {
   return request(withSource('/command-center/all', sourceId));
 }
@@ -156,4 +172,18 @@ export function syncFeishuComments(probe = false, options = {}) {
 
 export function getTicketComments(recordId) {
   return request(`/tickets/${encodeURIComponent(recordId)}/comments`);
+}
+
+// ── 数据源管理 API ──
+
+export function getSavedDataSources() {
+  return request('/feishu/sources');
+}
+
+export function removeDataSource(id) {
+  return request(`/feishu/sources/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+export function activateDataSource(id) {
+  return request(`/feishu/sources/${encodeURIComponent(id)}/activate`, { method: 'POST' });
 }

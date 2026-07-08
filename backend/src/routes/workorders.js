@@ -35,8 +35,13 @@ async function attachCommentStats(workorders) {
   });
 }
 
-router.get('/sources', (_req, res) => {
-  res.json({ defaultSourceId, sources: dataSources.map(({ id, name, provider }) => ({ id, name, provider })) });
+router.get('/sources', async (_req, res) => {
+  const { getDataSources } = await import('../config/dataSources.js');
+  const sources = await getDataSources();
+  res.json({
+    defaultSourceId,
+    sources: sources.map(({ id, name, provider, bitableUrl, isActive }) => ({ id, name, provider, bitableUrl, isActive }))
+  });
 });
 
 router.get('/', async (req, res) => {

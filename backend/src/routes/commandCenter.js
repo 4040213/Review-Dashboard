@@ -1,8 +1,14 @@
 import express from 'express';
 import { getAllWorkorders } from '../db/database.js';
+import { defaultSourceId } from '../config/dataSources.js';
 import { buildCommandCenterStats } from '../services/commandCenterEtl.js';
 
 const router = express.Router();
+
+/** 统一解析请求中的 sourceId，优先使用 query 参数，fallback 到默认值 */
+function resolveSourceId(req) {
+  return req.query.sourceId || defaultSourceId;
+}
 
 /**
  * GET /api/command-center/overview
@@ -10,7 +16,8 @@ const router = express.Router();
  */
 router.get('/overview', async (req, res) => {
   try {
-    const workorders = await getAllWorkorders();
+    const sourceId = resolveSourceId(req);
+    const workorders = await getAllWorkorders(sourceId);
     const data = buildCommandCenterStats(workorders);
     res.json(data.overview);
   } catch (error) {
@@ -24,7 +31,8 @@ router.get('/overview', async (req, res) => {
  */
 router.get('/diagnostics', async (req, res) => {
   try {
-    const workorders = await getAllWorkorders();
+    const sourceId = resolveSourceId(req);
+    const workorders = await getAllWorkorders(sourceId);
     const data = buildCommandCenterStats(workorders);
     res.json(data.diagnostics);
   } catch (error) {
@@ -39,7 +47,8 @@ router.get('/diagnostics', async (req, res) => {
  */
 router.get('/tasklist', async (req, res) => {
   try {
-    const workorders = await getAllWorkorders();
+    const sourceId = resolveSourceId(req);
+    const workorders = await getAllWorkorders(sourceId);
     const data = buildCommandCenterStats(workorders);
     let tasks = data.tasklist.workorders;
 
@@ -77,7 +86,8 @@ router.get('/tasklist', async (req, res) => {
  */
 router.get('/forecast', async (req, res) => {
   try {
-    const workorders = await getAllWorkorders();
+    const sourceId = resolveSourceId(req);
+    const workorders = await getAllWorkorders(sourceId);
     const data = buildCommandCenterStats(workorders);
     res.json(data.forecast);
   } catch (error) {
@@ -91,7 +101,8 @@ router.get('/forecast', async (req, res) => {
  */
 router.get('/bhi', async (req, res) => {
   try {
-    const workorders = await getAllWorkorders();
+    const sourceId = resolveSourceId(req);
+    const workorders = await getAllWorkorders(sourceId);
     const data = buildCommandCenterStats(workorders);
     res.json({ bhi: data.overview.bhi, bhiDetail: data.overview.bhiDetail });
   } catch (error) {
@@ -105,9 +116,53 @@ router.get('/bhi', async (req, res) => {
  */
 router.get('/all', async (req, res) => {
   try {
-    const workorders = await getAllWorkorders();
+    const sourceId = resolveSourceId(req);
+    const workorders = await getAllWorkorders(sourceId);
     const data = buildCommandCenterStats(workorders);
     res.json(data);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
+ * GET /api/command-center/debug
+ * 诊断端点：返回数据库行数、字段覆盖率、有效/无效分布等
+ */
+router.get('/debug', async (req, res) => {
+  try {
+    const sourceId = resolveSourceId(req);
+    const workorders = await getAllWorkorders(sourceId);
+    const data = buildCommandCenterStats(workorders);
+
+    // 字段覆盖率
+    const fields = ['coursePosition', 'grade', 'week', 'type', 'description', 'status', 'submittedAt', 'updatedAt', 'researcher'];
+    const total = workorders.length;
+    const coverage = {};
+    fields.forEach((f) => {
+      const nonEmpty = workorders.filter((w) => {
+        const v = w[f];
+        return v !== null && v !== undefined && String(v).trim() !== '';
+      }).length;
+      coverage[f] = { nonEmpty, rate: total ? Math.round((nonEmpty / total) * 100) : 0 };
+    });
+
+    const validCount = workorders.filter((w) => w.isValidForAnalysis).length;
+    const invalidCount = total - validCount;
+    const dateRange = data.overview?.throughputTrend?.length
+      ? `${data.overview.throughputTrend[0].date} ~ ${data.overview.throughputTrend[data.overview.throughputTrend.length - 1].date}`
+      : '无数据';
+
+    res.json({
+      sourceId,
+      totalWorkorders: total,
+      validCount,
+      invalidCount,
+      dateRange,
+      coverage,
+      statusGroupV2: data.overview?.statusGroupV2 || [],
+      kpis: data.overview?.kpis || {},
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

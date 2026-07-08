@@ -25,7 +25,6 @@ export default function OverviewDashboard({
   pendingReviewData,
   reworkData,
   invalidData,
-  onToggleUrgent,
   activeFilter,
   onErrorCardClick,
   focusWorkorders,

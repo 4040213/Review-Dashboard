@@ -116,6 +116,27 @@ export async function initDatabase() {
     db.run('CREATE INDEX IF NOT EXISTS idx_comments_record ON ticket_comments(feishu_record_id)');
   } catch (_) { /* index may already exist */ }
 
+  // ── 数据源配置表（持久化自定义数据源）──
+  db.run(`
+    CREATE TABLE IF NOT EXISTS data_sources (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      provider TEXT DEFAULT 'feishu_bitable',
+      bitable_url TEXT DEFAULT '',
+      app_token TEXT DEFAULT '',
+      table_id TEXT DEFAULT '',
+      table_name TEXT DEFAULT '',
+      is_active INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Ensure columns exist for older DBs
+  ['bitable_url', 'table_name', 'is_active'].forEach((col) => {
+    try { db.run(`ALTER TABLE data_sources ADD COLUMN ${col} TEXT DEFAULT ''`); } catch (_) {}
+  });
+
   saveDatabase();
   return db;
 }
@@ -405,4 +426,58 @@ export async function getCommentStatsForRecords(recordIds) {
 
 export function getDatabasePath() {
   return dbPath;
+}
+
+// ── 数据源配置 CRUD ──
+
+/** 获取所有数据源（优先 DB，Fallback 到 config 文件） */
+export async function getAllDataSources() {
+  await initDatabase();
+  try {
+    const result = db.exec('SELECT * FROM data_sources ORDER BY updated_at DESC');
+    if (result.length > 0) {
+      const { columns, values } = result[0];
+      return values.map((row) => {
+        const item = Object.fromEntries(columns.map((col, i) => [col, row[i]]));
+        return { ...item, is_active: Boolean(item.is_active) };
+      });
+    }
+  } catch (_) { /* table may not exist yet */ }
+  return [];
+}
+
+/** 保存或更新数据源 */
+export async function saveDataSource(source) {
+  await initDatabase();
+  const now = new Date().toISOString();
+  db.run(
+    `INSERT OR REPLACE INTO data_sources (id, name, provider, bitable_url, app_token, table_id, table_name, is_active, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      source.id, source.name, source.provider || 'feishu_bitable',
+      source.bitableUrl || source.bitable_url || '',
+      source.appToken || source.app_token || '',
+      source.tableId || source.table_id || '',
+      source.tableName || source.table_name || '',
+      source.isActive || source.is_active ? 1 : 0,
+      now
+    ]
+  );
+  saveDatabase();
+  return source;
+}
+
+/** 设置活跃数据源（取消其他活跃标记） */
+export async function setActiveDataSource(sourceId) {
+  await initDatabase();
+  db.run('UPDATE data_sources SET is_active = 0');
+  db.run('UPDATE data_sources SET is_active = 1, updated_at = ? WHERE id = ?', [new Date().toISOString(), sourceId]);
+  saveDatabase();
+}
+
+/** 删除数据源 */
+export async function deleteDataSource(sourceId) {
+  await initDatabase();
+  db.run('DELETE FROM data_sources WHERE id = ?', [sourceId]);
+  saveDatabase();
 }

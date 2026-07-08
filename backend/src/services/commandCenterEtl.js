@@ -214,14 +214,51 @@ export function buildCommandCenterStats(workorders) {
   const allAvgDensity = Object.values(gradeAvgDensity).reduce((s, v) => s + v, 0) /
     (Object.keys(gradeAvgDensity).length || 1);
 
-  // 近14日吞吐趋势
+  // ── 吞吐趋势：自动检测数据日期范围 ──
+  // 如果工单时间戳落在最近14天内则显示最近14天；
+  // 如果是历史数据（全部早于14天前），则自动扩展窗口覆盖数据范围。
   const today = new Date();
+  const allReportDates = enriched
+    .map((w) => w.reportDate)
+    .filter(Boolean)
+    .sort();
+  const allArchiveDates = enriched
+    .filter((w) => w.statusGroupV2 === '已关闭')
+    .map((w) => extractDate(w.updatedAt || w.archivedAt))
+    .filter(Boolean)
+    .sort();
+
+  const allDates = [...new Set([...allReportDates, ...allArchiveDates])].sort();
+  const dataEarliest = allDates[0] || today.toISOString().slice(0, 10);
+  const dataLatest = allDates[allDates.length - 1] || today.toISOString().slice(0, 10);
+
+  // 默认14天窗口，如果数据全在窗口外则扩展到数据范围（最多90天）
+  const defaultStart = new Date(today);
+  defaultStart.setDate(defaultStart.getDate() - 13);
+  const defaultStartKey = defaultStart.toISOString().slice(0, 10);
+
+  let windowStart, windowEnd;
+  if (dataLatest < defaultStartKey) {
+    // 全部是历史数据 → 使用数据自身范围
+    windowStart = new Date(dataEarliest);
+    windowEnd = new Date(dataLatest);
+    // 最多90天窗口
+    if ((windowEnd - windowStart) / (1000 * 60 * 60 * 24) > 90) {
+      windowStart = new Date(windowEnd);
+      windowStart.setDate(windowStart.getDate() - 89);
+    }
+  } else {
+    // 有近期数据 → 默认最近14天
+    windowStart = defaultStart;
+    windowEnd = today;
+  }
+
   const dailyData = {};
-  for (let i = 13; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
+  const cursor = new Date(windowStart);
+  while (cursor <= windowEnd) {
+    const key = cursor.toISOString().slice(0, 10);
     dailyData[key] = { date: key, newCount: 0, archivedCount: 0 };
+    cursor.setDate(cursor.getDate() + 1);
   }
 
   enriched.forEach((w) => {
@@ -444,13 +481,13 @@ export function buildCommandCenterStats(workorders) {
 
   // ── Tab 4: 预测与趋势 ──
 
-  // 近30日流入流出平衡
+  // 流入流出平衡：复用吞吐趋势相同的日期窗口逻辑
   const daily30 = {};
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
+  const cursor30 = new Date(windowStart);
+  while (cursor30 <= windowEnd) {
+    const key = cursor30.toISOString().slice(0, 10);
     daily30[key] = { date: key, newCount: 0, archivedCount: 0 };
+    cursor30.setDate(cursor30.getDate() + 1);
   }
   enriched.forEach((w) => {
     const rDate = w.reportDate;
